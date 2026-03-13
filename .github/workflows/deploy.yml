@@ -8,6 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:  # ← 新增这个 env 块，放在 jobs.deploy 下
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,17 +25,14 @@ jobs:
             cd /var/www/80oldcar
             git fetch --all
             git reset --hard origin/main
-            git clean -fd   # 清理未跟踪文件（可选，谨慎用）
+            git clean -fd
             
-            # 清理旧构建（防止缓存问题）
             rm -rf .next out node_modules/.cache
             
-            # 低内存构建（你 2G VPS 专用）
             export NODE_OPTIONS="--max-old-space-size=1536"
-            pnpm install --frozen-lockfile   # 只装依赖，不更新 lock
+            pnpm install --frozen-lockfile
             pnpm build
             
-            # 重启 PM2（改成你的进程名）
             pm2 restart 80oldcar
             pm2 save
             
