@@ -9,40 +9,36 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true   # 后备，允许 Node 20 继续用
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ← 只保留这个，强制用 Node 24
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@master   # 用 master 分支，确保最新兼容 Node 24
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          debug: true   # 开启详细日志
+          debug: true
           script: |
-            set -e  # 任何命令失败就停止并报错
+            set -e
 
-            echo "Starting deployment at $(date)"
-            cd /var/www/80oldcar || { echo "Path not found!"; exit 1; }
+            echo "=== Deployment started at $(date) ==="
+            cd /var/www/80oldcar || { echo "路径不存在！"; exit 1; }
 
             git fetch --all
             git reset --hard origin/main
-            git clean -fd  # 清理未跟踪文件（可选，如果有脏文件可注释）
+            git clean -fd
 
-            # 清理旧构建
             rm -rf .next out node_modules/.cache || true
 
-            # 安装依赖 & 构建（低内存模式）
             export NODE_OPTIONS="--max-old-space-size=1536"
-            pnpm install --frozen-lockfile || { echo "pnpm install failed"; exit 1; }
-            pnpm build || { echo "pnpm build failed"; exit 1; }
+            pnpm install --frozen-lockfile || { echo "pnpm install 失败"; exit 1; }
+            pnpm build || { echo "pnpm build 失败"; exit 1; }
 
-            # 重启 PM2（确认进程名正确）
-            pm2 restart 80oldcar || { echo "PM2 restart failed - check pm2 list"; exit 1; }
+            pm2 restart 80oldcar || { echo "PM2 重启失败，请检查 pm2 list"; exit 1; }
             pm2 save
 
-            echo "Deployment completed successfully at $(date)"
+            echo "=== Deployment completed successfully at $(date) ==="
