@@ -10,10 +10,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6   # ← 关键升级！已支持 Node 24
+        uses: actions/checkout@v6
 
       - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5   # ← 改用最新稳定版
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -22,7 +22,18 @@ jobs:
           script: |
             set -e
 
-            echo "=== Deployment started at $(date) ==="
+            echo "=== 开始部署 $(date) ==="
+
+            # 关键修复：加载你的环境变量（pnpm、pm2、node）
+            source ~/.bashrc 2>/dev/null || true
+            source ~/.profile 2>/dev/null || true
+            source /root/.nvm/nvm.sh 2>/dev/null || true   # 如果你用 nvm
+
+            echo "=== PATH: $PATH ==="
+            echo "pnpm: $(which pnpm || echo '未找到')"
+            echo "pm2: $(which pm2 || echo '未找到')"
+            echo "node: $(which node || echo '未找到')"
+
             cd /var/www/80oldcar || { echo "路径不存在！"; exit 1; }
 
             git fetch --all
@@ -32,10 +43,10 @@ jobs:
             rm -rf .next out node_modules/.cache || true
 
             export NODE_OPTIONS="--max-old-space-size=1536"
-            pnpm install --frozen-lockfile || { echo "pnpm install 失败"; exit 1; }
-            pnpm build || { echo "pnpm build 失败"; exit 1; }
+            pnpm install --frozen-lockfile
+            pnpm build
 
-            pm2 restart 80oldcar || { echo "PM2 重启失败，请检查 pm2 list"; exit 1; }
+            pm2 restart 80oldcar
             pm2 save
 
-            echo "=== Deployment completed successfully at $(date) ==="
+            echo "=== 部署成功完成 $(date) ==="
