@@ -8,12 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ← 只保留这个，强制用 Node 24
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6   # ← 关键升级！已支持 Node 24
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
