@@ -24,14 +24,13 @@ jobs:
 
             echo "=== 开始部署 $(date) ==="
 
-            # 加载环境变量
             source ~/.bashrc 2>/dev/null || true
             source ~/.profile 2>/dev/null || true
 
             cd /var/www/80oldcar || { echo "路径不存在！"; exit 1; }
 
-            # 🔥 关键修复：强制改成你的仓库地址（以后永不失效）
-            git remote set-url origin https://github.com/KomaLin1984/2025-blog-80oldcar.git
+            # 强制使用 SSH 地址（彻底绕过 443 问题）
+            git remote set-url origin git@github.com:KomaLin1984/2025-blog-80oldcar.git
 
             git fetch --all
             git reset --hard origin/main
