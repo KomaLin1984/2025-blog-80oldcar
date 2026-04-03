@@ -12,6 +12,7 @@ import { Pause } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 
+const MUSIC_FILES = ['/music/close-to-you.mp3']
 
 export default function MusicCard() {
 	const pathname = usePathname()
@@ -29,20 +30,6 @@ export default function MusicCard() {
 	const currentIndexRef = useRef(0)
 
 	const isHomePage = pathname === '/'
-    const [musicFiles, setMusicFiles] = useState<string[]>([]);
-
-    // 加载音乐列表
-    useEffect(() => {
-    fetch('/api/music-list')
-          .then(res => res.json())
-          .then(files => {
-            setMusicFiles(files);
-            if (files.length > 0) {
-              setCurrentIndex(0); // 默认播放第一首
-            }
-          })
-      .catch(err => console.error('获取音乐列表失败:', err));
-  }, []);
 
 	const position = useMemo(() => {
 		// If not on home page, always position at bottom-right corner when playing
@@ -76,13 +63,12 @@ export default function MusicCard() {
 			}
 		}
 
-        const handleEnded = () => {
-          if (musicFiles.length === 0) return;
-          const nextIndex = (currentIndexRef.current + 1) % musicFiles.length;
-          currentIndexRef.current = nextIndex;
-          setCurrentIndex(nextIndex);
-          setProgress(0);
-        };
+		const handleEnded = () => {
+			const nextIndex = (currentIndexRef.current + 1) % MUSIC_FILES.length
+			currentIndexRef.current = nextIndex
+			setCurrentIndex(nextIndex)
+			setProgress(0)
+		}
 
 		const handleTimeUpdate = () => {
 			updateProgress()
