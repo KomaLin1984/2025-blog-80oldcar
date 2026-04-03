@@ -12,7 +12,10 @@ import { Pause } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 
-const MUSIC_FILES = ['/music/close-to-you.mp3']
+const MUSIC_FILES = [
+  '/music/Axel F-maromaro1337.mp3',
+  '/music/Feel Good Inc-maromaro1337.mp3',
+]
 
 export default function MusicCard() {
 	const pathname = usePathname()
