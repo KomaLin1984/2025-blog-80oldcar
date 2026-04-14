@@ -7,7 +7,7 @@ import { useConfigStore } from '../app/(home)/stores/config-store'
 import { CARD_SPACING } from '@/consts'
 import MusicSVG from '@/svgs/music.svg'
 import { HomeDraggableLayer } from '../app/(home)/home-draggable-layer'
-import { Pause, Play, Shuffle, Repeat, RepeatOnce, ListMusic, X, ChevronUp } from 'lucide-react'
+import { Pause, Play, Shuffle, Repeat, ListMusic, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 
@@ -24,6 +24,17 @@ const MUSIC_NAMES = [
   'Feel Good Inc',
   'Christmas',
 ]
+
+const PlayModeIcon = ({ mode }: { mode: PlayMode }) => {
+  switch (mode) {
+    case 'loop':
+      return <Repeat className="h-4 w-4 text-brand" strokeWidth={2.5} />
+    case 'shuffle':
+      return <Shuffle className="h-4 w-4 text-brand" strokeWidth={2.5} />
+    default:
+      return <Repeat className="h-4 w-4 text-secondary" strokeWidth={2.5} />
+  }
+}
 
 export default function MusicCard() {
   const pathname = usePathname()
@@ -45,7 +56,6 @@ export default function MusicCard() {
 
   const isHomePage = pathname === '/'
 
-  // Generate shuffled order once
   const getShuffledIndices = useCallback(() => {
     const indices = MUSIC_FILES.map((_, i) => i)
     for (let i = indices.length - 1; i > 0; i--) {
@@ -70,7 +80,6 @@ export default function MusicCard() {
 
   const { x, y } = position
 
-  // Initialize audio
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio()
@@ -112,7 +121,6 @@ export default function MusicCard() {
     }
   }, [playMode])
 
-  // Handle currentIndex change
   useEffect(() => {
     currentIndexRef.current = currentIndex
     if (audioRef.current) {
@@ -127,7 +135,6 @@ export default function MusicCard() {
     }
   }, [currentIndex])
 
-  // Handle play/pause
   useEffect(() => {
     if (!audioRef.current) return
     if (isPlaying) {
@@ -137,14 +144,12 @@ export default function MusicCard() {
     }
   }, [isPlaying])
 
-  // Initialize shuffle when switching to shuffle mode
   useEffect(() => {
     if (playMode === 'shuffle' && shuffledRef.current.length === 0) {
       shuffledRef.current = getShuffledIndices()
     }
   }, [playMode, getShuffledIndices])
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -174,47 +179,50 @@ export default function MusicCard() {
     setIsPlaying(true)
   }
 
-  const getPlayModeIcon = () => {
-    switch (playMode) {
-      case 'loop':
-        return <Repeat className="h-3.5 w-3.5 text-brand" />
-      case 'shuffle':
-        return <Shuffle className="h-3.5 w-3.5 text-brand" />
-      default:
-        return <Repeat className="h-3.5 w-3.5 text-secondary" />
-    }
-  }
-
-  // Hide if not on home page and not playing
   if (!isHomePage && !isPlaying) {
     return null
   }
 
   return (
-    <HomeDraggableLayer cardKey='musicCard' x={x} y={y} width={styles.width} height={showPlaylist ? 320 : styles.height}>
-      <Card order={styles.order} width={styles.width} height={showPlaylist ? 320 : styles.height} x={x} y={y} className={clsx('flex flex-col', !isHomePage && 'fixed')}>
+    <HomeDraggableLayer cardKey='musicCard' x={x} y={y} width={styles.width} height={showPlaylist ? 300 : styles.height}>
+      <Card order={styles.order} width={styles.width} height={showPlaylist ? 300 : styles.height} x={x} y={y} className={clsx('flex flex-col', !isHomePage && 'fixed')}>
         {/* Main player bar */}
-        <div className="flex items-center gap-2 p-3">
-          <MusicSVG className="h-6 w-6 text-brand flex-shrink-0" />
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+            <MusicSVG className="w-full h-full" />
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="text-primary text-sm font-medium truncate">{MUSIC_NAMES[currentIndex]}</div>
-            <div className="mt-1 h-1.5 rounded-full bg-white/40">
+            <div className="mt-1.5 h-1.5 rounded-full bg-white/40 overflow-hidden">
               <div className="bg-brand h-full rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
-          <button onClick={togglePlayPause} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 hover:bg-white transition-opacity flex-shrink-0">
-            {isPlaying ? <Pause className="text-brand h-3.5 w-3.5" /> : <Play className="text-brand h-3.5 w-3.5 ml-0.5" />}
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Play/Pause button */}
+            <button onClick={togglePlayPause} className="w-8 h-8 rounded-full bg-white/80 hover:bg-white transition-opacity flex items-center justify-center">
+              {isPlaying ? (
+                <Pause className="h-4 w-4 text-brand" strokeWidth={2.5} />
+              ) : (
+                <Play className="h-4 w-4 text-brand ml-0.5" strokeWidth={2.5} />
+              )}
+            </button>
 
-          <button onClick={cyclePlayMode} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/50 transition-opacity flex-shrink-0" title={playMode}>
-            {getPlayModeIcon()}
-          </button>
+            {/* Play mode button */}
+            <button onClick={cyclePlayMode} className="w-8 h-8 rounded-full hover:bg-white/50 transition-opacity flex items-center justify-center" title={playMode}>
+              <PlayModeIcon mode={playMode} />
+            </button>
 
-          <button onClick={() => setShowPlaylist(!showPlaylist)} className={clsx("flex h-8 w-8 items-center justify-center rounded-full transition-opacity flex-shrink-0", showPlaylist ? 'bg-brand/20' : 'hover:bg-white/50')}>
-            {showPlaylist ? <X className="h-3.5 w-3.5 text-brand" /> : <ListMusic className="h-3.5 w-3.5 text-secondary" />}
-          </button>
+            {/* Playlist toggle */}
+            <button onClick={() => setShowPlaylist(!showPlaylist)} className={clsx("w-8 h-8 rounded-full transition-opacity flex items-center justify-center", showPlaylist ? 'bg-brand/20' : 'hover:bg-white/50')}>
+              {showPlaylist ? (
+                <X className="h-4 w-4 text-brand" strokeWidth={2.5} />
+              ) : (
+                <ListMusic className="h-4 w-4 text-secondary" strokeWidth={2.5} />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Playlist */}
@@ -229,7 +237,7 @@ export default function MusicCard() {
                   currentIndex === idx ? 'bg-brand/20 text-brand' : 'hover:bg-white/50 text-secondary'
                 )}
               >
-                <span className="w-5 text-xs">{currentIndex === idx ? (isPlaying ? '▶' : '♪') : `${idx + 1}.`}</span>
+                <span className="w-5 text-xs font-medium">{currentIndex === idx ? (isPlaying ? '▶' : '♪') : `${idx + 1}.`}</span>
                 <span className="truncate">{MUSIC_NAMES[idx]}</span>
               </button>
             ))}
