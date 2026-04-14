@@ -33,16 +33,16 @@
 		"enabled": true
 	},
 	"musicCard": {
-		"width": 228,
-		"height": 50,
+		"width": 376,
+		"height": 87,
 		"offset": 120,
 		"order": 6,
 		"offsetX": -190,
-		"offsetY": 208,
+		"offsetY": 216,
 		"enabled": true
 	},
 	"socialButtons": {
-		"width": 331,
+		"width": 353,
 		"height": 50,
 		"order": 6,
 		"offsetX": -197,
@@ -58,19 +58,19 @@
 		"enabled": false
 	},
 	"articleCard": {
-		"width": 266,
-		"height": 216,
+		"width": 271,
+		"height": 260,
 		"order": 8,
 		"offsetX": -472,
 		"offsetY": 44,
 		"enabled": true
 	},
 	"writeButtons": {
-		"height": 53,
-		"width": 192,
+		"height": 50,
+		"width": 170,
 		"order": 8,
-		"offsetX": 54,
-		"offsetY": 208,
+		"offsetX": 210,
+		"offsetY": 217,
 		"enabled": true
 	},
 	"navCard": {
