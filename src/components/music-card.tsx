@@ -1,4 +1,4 @@
-use client'
+'use client'
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import Card from '@/components/card'
