@@ -38,25 +38,11 @@
 	"currentBackgroundImageId": "",
 	"socialButtons": [
 		{
-			"id": "github",
-			"type": "github",
-			"value": "https://github.com/KomaLin1984",
-			"label": "Github",
-			"order": 3
-		},
-		{
 			"id": "email",
 			"type": "email",
 			"value": "komajpl@gmail.com",
 			"label": "",
 			"order": 1
-		},
-		{
-			"id": "button-1775523822467",
-			"type": "juejin",
-			"value": "https://pan.baidu.com/s/19RptjlTk5msnkC0AwgNZ3A ",
-			"label": "软件分享",
-			"order": 3
 		}
 	],
 	"clockShowSeconds": true,
@@ -68,7 +54,7 @@
 	"hatFlipped": false,
 	"enableChristmas": false,
 	"beian": {
-		"text": "",
+		"text": "陕ICP备2026002128号",
 		"link": ""
 	}
 }
