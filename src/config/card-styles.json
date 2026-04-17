@@ -25,8 +25,8 @@
 		"enabled": true
 	},
 	"calendarCard": {
-		"width": 364,
-		"height": 338,
+		"width": 361,
+		"height": 441,
 		"order": 5,
 		"offsetX": 202,
 		"offsetY": -141,
@@ -42,11 +42,11 @@
 		"enabled": true
 	},
 	"socialButtons": {
-		"width": 353,
+		"width": 58,
 		"height": 50,
 		"order": 6,
-		"offsetX": -197,
-		"offsetY": 148,
+		"offsetX": -69,
+		"offsetY": 353,
 		"enabled": true
 	},
 	"shareCard": {
@@ -67,10 +67,10 @@
 	},
 	"writeButtons": {
 		"height": 50,
-		"width": 170,
+		"width": 165,
 		"order": 8,
-		"offsetX": 210,
-		"offsetY": 217,
+		"offsetX": 13,
+		"offsetY": 153,
 		"enabled": true
 	},
 	"navCard": {
@@ -98,11 +98,11 @@
 		"enabled": false
 	},
 	"beianCard": {
-		"width": 200,
-		"height": 60,
+		"width": 178,
+		"height": 56,
 		"order": 11,
-		"offsetX": null,
-		"offsetY": null,
+		"offsetX": -188,
+		"offsetY": 146,
 		"enabled": true
 	}
 }

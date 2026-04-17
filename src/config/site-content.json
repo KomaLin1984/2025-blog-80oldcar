@@ -36,20 +36,12 @@
 		}
 	],
 	"currentBackgroundImageId": "",
-	"socialButtons": [
-		{
-			"id": "email",
-			"type": "email",
-			"value": "komajpl@gmail.com",
-			"label": "",
-			"order": 1
-		}
-	],
+	"socialButtons": [],
 	"clockShowSeconds": true,
 	"summaryInContent": false,
 	"isCachePem": false,
 	"hideEditButton": false,
-	"enableCategories": true,
+	"enableCategories": false,
 	"currentHatIndex": 3,
 	"hatFlipped": false,
 	"enableChristmas": false,
