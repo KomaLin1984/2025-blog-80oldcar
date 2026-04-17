@@ -1,0 +1,19 @@
+<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cat ear left -->
+  <path d="M6 10L7.5 6.5C8 5.5 9.5 5.5 10 6.5L11.5 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Cat ear right -->
+  <path d="M16.5 10L18 6.5C18.5 5.5 20 5.5 20.5 6.5L22 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Cat face outline -->
+  <path d="M4 14C4 10 7.5 7 11 7H17C20.5 7 24 10 24 14V19C24 21 22.5 22.5 20.5 22.5H7.5C5.5 22.5 4 21 4 19V14Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  <!-- Eyes -->
+  <circle cx="10.5" cy="15" r="1.2" fill="currentColor"/>
+  <circle cx="17.5" cy="15" r="1.2" fill="currentColor"/>
+  <!-- Nose -->
+  <path d="M14 17L13 18.5L14 19L15 18.5L14 17Z" fill="currentColor"/>
+  <!-- Whiskers left -->
+  <line x1="4" y1="17" x2="9" y2="16.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="4" y1="18.5" x2="9" y2="18.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Whiskers right -->
+  <line x1="24" y1="17" x2="19" y2="16.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="24" y1="18.5" x2="19" y2="18.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

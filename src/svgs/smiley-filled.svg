@@ -1,0 +1,12 @@
+<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Face filled -->
+  <circle cx="14" cy="14" r="10.5" fill="currentColor"/>
+  <!-- Eyes cutout -->
+  <circle cx="10.5" cy="12.5" r="1.6" fill="white"/>
+  <circle cx="17.5" cy="12.5" r="1.6" fill="white"/>
+  <!-- Smile cutout -->
+  <path d="M9 17.5C9.8 19 11.2 20 13 20.5C14.8 20 16.2 19 17 17.5" stroke="white" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+  <!-- Rosy cheeks -->
+  <circle cx="8.5" cy="16" r="1.2" fill="white" opacity="0.5"/>
+  <circle cx="19.5" cy="16" r="1.2" fill="white" opacity="0.5"/>
+</svg>

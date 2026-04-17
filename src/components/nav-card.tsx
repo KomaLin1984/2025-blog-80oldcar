@@ -7,16 +7,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { useCenterStore } from '@/hooks/use-center'
 import { CARD_SPACING } from '@/consts'
-import ScrollOutlineSVG from '@/svgs/scroll-outline.svg'
-import ScrollFilledSVG from '@/svgs/scroll-filled.svg'
-import ProjectsFilledSVG from '@/svgs/projects-filled.svg'
-import ProjectsOutlineSVG from '@/svgs/projects-outline.svg'
-import AboutFilledSVG from '@/svgs/about-filled.svg'
-import AboutOutlineSVG from '@/svgs/about-outline.svg'
-import ShareFilledSVG from '@/svgs/share-filled.svg'
-import ShareOutlineSVG from '@/svgs/share-outline.svg'
-import WebsiteFilledSVG from '@/svgs/website-filled.svg'
-import WebsiteOutlineSVG from '@/svgs/website-outline.svg'
+import ClockOutlineSVG from '@/svgs/clock-outline.svg'
+import ClockFilledSVG from '@/svgs/clock-filled.svg'
+import SoftwareOutlineSVG from '@/svgs/software-outline.svg'
+import SoftwareFilledSVG from '@/svgs/software-filled.svg'
+import GithubOutlineSVG from '@/svgs/github-outline.svg'
+import GithubFilledSVG from '@/svgs/github-filled.svg'
+import ArticleOutlineSVG from '@/svgs/article-outline.svg'
+import ArticleFilledSVG from '@/svgs/article-filled.svg'
+import SmileyOutlineSVG from '@/svgs/smiley-outline.svg'
+import SmileyFilledSVG from '@/svgs/smiley-filled.svg'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
@@ -26,32 +26,32 @@ import { HomeDraggableLayer } from '@/app/(home)/home-draggable-layer'
 
 const list = [
 	{
-		icon: ScrollOutlineSVG,
-		iconActive: ScrollFilledSVG,
+		icon: ClockOutlineSVG,
+		iconActive: ClockFilledSVG,
 		label: '辉光管电子钟',
-		href: '/clock'
+		href: '/辉光管时钟终版带工具.html'
 	},
 	{
-		icon: ProjectsOutlineSVG,
-		iconActive: ProjectsFilledSVG,
+		icon: SoftwareOutlineSVG,
+		iconActive: SoftwareFilledSVG,
 		label: '软件分享',
 		href: '/share'
 	},
 	{
-		icon: AboutOutlineSVG,
-		iconActive: AboutFilledSVG,
+		icon: GithubOutlineSVG,
+		iconActive: GithubFilledSVG,
 		label: '我的Github',
 		href: 'https://github.com/KomaLin1984'
 	},
 	{
-		icon: ShareOutlineSVG,
-		iconActive: ShareFilledSVG,
+		icon: ArticleOutlineSVG,
+		iconActive: ArticleFilledSVG,
 		label: '近期文章',
 		href: '/blog'
 	},
 	{
-		icon: WebsiteOutlineSVG,
-		iconActive: WebsiteFilledSVG,
+		icon: SmileyOutlineSVG,
+		iconActive: SmileyFilledSVG,
 		label: '开心每一天',
 		href: '/pictures'
 	}

@@ -1,0 +1,13 @@
+<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cat ear left -->
+  <path d="M6 10L7.5 6.5C8 5.5 9.5 5.5 10 6.5L11.5 10" fill="currentColor"/>
+  <!-- Cat ear right -->
+  <path d="M16.5 10L18 6.5C18.5 5.5 20 5.5 20.5 6.5L22 10" fill="currentColor"/>
+  <!-- Cat face filled -->
+  <path d="M4 14C4 10 7.5 7 11 7H17C20.5 7 24 10 24 14V19C24 21 22.5 22.5 20.5 22.5H7.5C5.5 22.5 4 21 4 19V14Z" fill="currentColor"/>
+  <!-- Eyes cutout -->
+  <circle cx="10.5" cy="15" r="1.5" fill="white"/>
+  <circle cx="17.5" cy="15" r="1.5" fill="white"/>
+  <!-- Nose cutout -->
+  <path d="M14 17.2L13 19L14 19.8L15 19L14 17.2Z" fill="white"/>
+</svg>
