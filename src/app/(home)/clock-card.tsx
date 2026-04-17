@@ -14,7 +14,7 @@ const GLOW_COLOR = '#ff8c00'
 const GLOW_SHADOW = '0 0 7px #ff8c00, 0 0 15px #ff6600, 0 0 30px #ff4500, 0 0 50px rgba(255,69,0,0.5), 0 0 80px rgba(255,69,0,0.3)'
 const COLON_GLOW = '0 0 6px #ff8c00, 0 0 15px #ff6600, 0 0 30px rgba(255,100,0,0.4)'
 
-// 单个辉光数字
+// 单个辉光数字 - 适配卡片尺寸
 function NixieDigit({ value }: { value: number }) {
 	return (
 		<span
@@ -23,7 +23,7 @@ function NixieDigit({ value }: { value: number }) {
 				color: GLOW_COLOR,
 				textShadow: GLOW_SHADOW,
 				lineHeight: 1,
-				fontSize: '52px'
+				fontSize: '36px'
 			}}>
 			{value}
 		</span>
@@ -41,7 +41,7 @@ function GhostDigits() {
 					style={{
 						color: 'rgba(255,140,0,0.04)',
 						lineHeight: 1,
-						fontSize: '52px'
+						fontSize: '36px'
 					}}>
 					{n}
 				</span>
@@ -50,18 +50,18 @@ function GhostDigits() {
 	)
 }
 
-// 辉光管单元（与原HTML保持相同比例）
+// 辉光管单元 - 适配卡片尺寸 (40px宽 x 65px高)
 function NixieTube({ children }: { children: React.ReactNode }) {
 	return (
 		<div
 			className='relative flex items-center justify-center overflow-hidden'
 			style={{
-				width: '70px',
-				height: '110px',
+				width: '40px',
+				height: '65px',
 				background: 'linear-gradient(180deg, rgba(20,15,10,0.95) 0%, rgba(10,8,5,0.98) 100%)',
-				borderRadius: '16px',
+				borderRadius: '10px',
 				border: '1.5px solid rgba(255,140,0,0.3)',
-				boxShadow: 'inset 0 0 30px rgba(255,100,0,0.15), inset 0 0 60px rgba(255,80,0,0.08), 0 0 15px rgba(255,140,0,0.2), 0 0 40px rgba(255,100,0,0.1), 0 4px 15px rgba(0,0,0,0.5)'
+				boxShadow: 'inset 0 0 20px rgba(255,100,0,0.15), inset 0 0 40px rgba(255,80,0,0.08), 0 0 10px rgba(255,140,0,0.15), 0 3px 10px rgba(0,0,0,0.5)'
 			}}>
 			{/* 蜂窝网格 */}
 			<div
@@ -76,15 +76,15 @@ function NixieTube({ children }: { children: React.ReactNode }) {
 				className='pointer-events-none absolute inset-0 z-[5]'
 				style={{
 					background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, transparent 100%)',
-					borderRadius: '16px 16px 0 0'
+					borderRadius: '10px 10px 0 0'
 				}}
 			/>
 
 			{/* 四角引脚 */}
-			<div className='absolute left-[6px] top-[6px] z-[6] h-1 w-1 rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
-			<div className='absolute right-[6px] top-[6px] z-[6] h-1 w-1 rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
-			<div className='absolute bottom-[6px] left-[6px] z-[6] h-1 w-1 rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
-			<div className='absolute bottom-[6px] right-[6px] z-[6] h-1 w-1 rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
+			<div className='absolute left-[4px] top-[4px] z-[6] h-[3px] w-[3px] rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
+			<div className='absolute right-[4px] top-[4px] z-[6] h-[3px] w-[3px] rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
+			<div className='absolute bottom-[4px] left-[4px] z-[6] h-[3px] w-[3px] rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
+			<div className='absolute bottom-[4px] right-[4px] z-[6] h-[3px] w-[3px] rounded-full bg-gradient-to-br from-gray-400 to-gray-600' />
 
 			{children}
 		</div>
@@ -94,12 +94,12 @@ function NixieTube({ children }: { children: React.ReactNode }) {
 // 脉冲冒号
 function NixieColon() {
 	return (
-		<div className='flex flex-col items-center justify-center' style={{ padding: '0 4px', gap: '12px' }}>
+		<div className='flex flex-col items-center justify-center' style={{ padding: '0 3px', gap: '8px' }}>
 			<div
 				className='animate-[dotPulse_1s_ease-in-out_infinite]'
 				style={{
-					width: '8px',
-					height: '8px',
+					width: '5px',
+					height: '5px',
 					borderRadius: '50%',
 					background: GLOW_COLOR,
 					boxShadow: COLON_GLOW
@@ -108,8 +108,8 @@ function NixieColon() {
 			<div
 				className='animate-[dotPulse_1s_ease-in-out_infinite]'
 				style={{
-					width: '8px',
-					height: '8px',
+					width: '5px',
+					height: '5px',
 					borderRadius: '50%',
 					background: GLOW_COLOR,
 					boxShadow: COLON_GLOW
@@ -182,7 +182,7 @@ export default function ClockCard() {
 						}}
 					/>
 
-					{/* 辉光管时间显示 - 原尺寸不缩放 */}
+					{/* 辉光管时间显示 - 适配卡片尺寸 */}
 					<div className='relative z-10 flex items-center animate-[subtleGlow_3s_ease-in-out_infinite]'>
 						{/* 时 */}
 						<NixieTube>
@@ -226,8 +226,7 @@ export default function ClockCard() {
 					<div
 						className='absolute bottom-0 left-1/2 h-px -translate-x-1/2'
 						style={{
-							width: '600px',
-							maxWidth: '90%',
+							width: '90%',
 							background: 'linear-gradient(90deg, transparent 0%, rgba(255,140,0,0.2) 30%, rgba(255,140,0,0.3) 50%, rgba(255,140,0,0.2) 70%, transparent 100%)'
 						}}
 					/>
