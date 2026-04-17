@@ -9,6 +9,110 @@ import { useLayoutEditStore } from './stores/layout-edit-store'
 import { CARD_SPACING } from '@/consts'
 import { HomeDraggableLayer } from './home-draggable-layer'
 
+// Nixie tube digit component
+function NixieDigit({ value, className = '' }: { value: number; className?: string }) {
+	const activeColor = '#ff6b35'
+	const glowColor = '#ff6b35'
+	const inactiveColor = 'rgba(40, 40, 50, 0.6)'
+
+	const segments: { path: string; active: boolean }[] = [
+		// Top horizontal (a)
+		{
+			path: 'M4.5 2.5 L24.5 2.5 L23 4.5 L6 4.5 Z',
+			active: [0, 2, 3, 5, 6, 7, 8, 9].includes(value)
+		},
+		// Top-right vertical (b)
+		{
+			path: 'M25 3.5 L25 23 L22.5 21 L22.5 5.5 Z',
+			active: [0, 1, 2, 3, 4, 7, 8, 9].includes(value)
+		},
+		// Middle-right vertical (c)
+		{
+			path: 'M22.5 26 L22.5 44 L20 42 L20 28 Z',
+			active: [0, 2, 6, 8].includes(value)
+		},
+		// Bottom horizontal (d)
+		{
+			path: 'M4.5 50 L24.5 50 L23 48 L6 48 Z',
+			active: [2, 3, 5, 6, 8, 9].includes(value)
+		},
+		// Bottom-left vertical (e)
+		{
+			path: 'M4.5 28 L4.5 44 L7 42 L7 30 Z',
+			active: [0, 2, 6, 8].includes(value)
+		},
+		// Middle-left vertical (f)
+		{
+			path: 'M7 5.5 L7 21 L9.5 23 L9.5 3.5 Z',
+			active: [0, 4, 5, 6, 7, 8, 9].includes(value)
+		},
+		// Middle horizontal (g)
+		{
+			path: 'M6 26 L23 26 L22 28 L7 28 Z',
+			active: [2, 3, 4, 5, 6, 8, 9].includes(value)
+		}
+	]
+
+	return (
+		<div className={`relative ${className}`}>
+			<svg
+				width='30'
+				height='54'
+				viewBox='0 0 30 54'
+				className='relative z-10 drop-shadow-[0_0_8px_rgba(255,107,53,0.8)]'>
+				<defs>
+					<filter id={`glow-${value}`} x='-50%' y='-50%' width='200%' height='200%'>
+						<feGaussianBlur stdDeviation='2' result='coloredBlur' />
+						<feMerge>
+							<feMergeNode in='coloredBlur' />
+							<feMergeNode in='SourceGraphic' />
+						</feMerge>
+					</filter>
+				</defs>
+				{segments.map((seg, i) => (
+					<path
+						key={i}
+						d={seg.path}
+						fill={seg.active ? glowColor : inactiveColor}
+						filter={seg.active ? `url(#glow-${value})` : undefined}
+					/>
+				))}
+			</svg>
+			{/* 数字本身 */}
+			<span
+				className='absolute inset-0 flex items-center justify-center font-mono text-4xl font-bold tracking-wider'
+				style={{
+					color: activeColor,
+					textShadow: `0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px rgba(255,107,53,0.5)`
+				}}>
+				{value}
+			</span>
+		</div>
+	)
+}
+
+// 冒号分隔符 - 辉光管风格
+function NixieColon() {
+	return (
+		<div className='flex flex-col justify-center gap-3 px-1'>
+			<div
+				className='h-2 w-2 rounded-full'
+				style={{
+					background: '#ff6b35',
+					boxShadow: '0 0 8px #ff6b35, 0 0 15px rgba(255,107,53,0.6)'
+				}}
+			/>
+			<div
+				className='h-2 w-2 rounded-full'
+				style={{
+					background: '#ff6b35',
+					boxShadow: '0 0 8px #ff6b35, 0 0 15px rgba(255,107,53,0.6)'
+				}}
+			/>
+		</div>
+	)
+}
+
 export default function ClockCard() {
 	const router = useRouter()
 	const center = useCenterStore()
@@ -60,42 +164,70 @@ export default function ClockCard() {
 							router.push('/clock')
 						}
 					}}
-					className='card-rounded flex h-full w-full cursor-pointer items-center justify-center overflow-hidden bg-gradient-to-br from-[#0a1a2e] via-[#0d2233] to-[#0f2942]'>
-					{/* 装饰性背景光晕 */}
-					<div className='absolute inset-0 opacity-20'>
-						<div className='absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#35bfab]' />
+					className='card-rounded relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden'
+					style={{
+						background: 'linear-gradient(180deg, #0a0a12 0%, #12121f 50%, #0a0a12 100%)'
+					}}>
+					{/* 背景网格纹理 */}
+					<div
+						className='absolute inset-0 opacity-20'
+						style={{
+							backgroundImage: `
+								linear-gradient(rgba(255,107,53,0.1) 1px, transparent 1px),
+								linear-gradient(90deg, rgba(255,107,53,0.1) 1px, transparent 1px)
+							`,
+							backgroundSize: '20px 20px'
+						}}
+					/>
+
+					{/* 辉光光晕效果 */}
+					<div className='absolute inset-0 flex items-center justify-center'>
+						<div
+							className='h-40 w-40 rounded-full'
+							style={{
+								background: 'radial-gradient(circle, rgba(255,107,53,0.15) 0%, transparent 70%)'
+							}}
+						/>
 					</div>
 
-					{/* 时间显示 */}
-					<div className='relative z-10 flex items-center gap-3'>
-						{/* 时分 */}
-						<div className='flex items-baseline gap-1'>
-							<span className='font-mono text-7xl font-bold tracking-tight text-white drop-shadow-[0_0_20px_rgba(53,191,171,0.5)]'>
-								{hours}
-							</span>
-							<span className='font-mono text-5xl font-bold text-[#35bfab] drop-shadow-[0_0_15px_rgba(53,191,171,0.8)]'>
-								:
-							</span>
-							<span className='font-mono text-7xl font-bold tracking-tight text-white drop-shadow-[0_0_20px_rgba(53,191,171,0.5)]'>
-								{minutes}
-							</span>
-						</div>
+					{/* 玻璃质感覆盖层 */}
+					<div
+						className='absolute inset-0'
+						style={{
+							background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%)'
+						}}
+					/>
 
-						{/* 秒数 */}
+					{/* 时间显示 */}
+					<div className='relative z-10 flex items-center'>
+						{/* 时 */}
+						<NixieDigit value={parseInt(hours[0])} />
+						<NixieDigit value={parseInt(hours[1])} />
+
+						<NixieColon />
+
+						{/* 分 */}
+						<NixieDigit value={parseInt(minutes[0])} />
+						<NixieDigit value={parseInt(minutes[1])} />
+
 						{showSeconds && (
-							<div className='flex items-baseline gap-1'>
-								<span className='font-mono text-4xl font-bold text-[#35bfab]/80 drop-shadow-[0_0_10px_rgba(53,191,171,0.4)]'>
-									:
-								</span>
-								<span className='font-mono text-4xl font-bold text-white/70 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]'>
-									{seconds}
-								</span>
-							</div>
+							<>
+								<NixieColon />
+								{/* 秒 */}
+								<NixieDigit value={parseInt(seconds[0])} />
+								<NixieDigit value={parseInt(seconds[1])} />
+							</>
 						)}
 					</div>
 
-					{/* 底部分隔线装饰 */}
-					<div className='absolute bottom-3 left-1/2 h-1 w-16 -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-[#35bfab]/50 to-transparent' />
+					{/* 底部装饰线 */}
+					<div
+						className='absolute bottom-0 left-0 right-0 h-1'
+						style={{
+							background: 'linear-gradient(90deg, transparent 0%, #ff6b35 50%, transparent 100%)',
+							boxShadow: '0 0 20px rgba(255,107,53,0.5)'
+						}}
+					/>
 				</div>
 			</Card>
 		</HomeDraggableLayer>
