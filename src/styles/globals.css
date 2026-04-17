@@ -176,3 +176,40 @@
 		animation: heartbeat-frame 0.8s ease-in-out;
 	}
 }
+
+/* ===== 辉光管时钟动画 ===== */
+@keyframes subtleGlow {
+	0%, 100% {
+		filter: brightness(1);
+	}
+	50% {
+		filter: brightness(1.05);
+	}
+}
+
+@keyframes dotPulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+@keyframes digitFlicker {
+	0% {
+		opacity: 1;
+	}
+	25% {
+		opacity: 0.3;
+	}
+	50% {
+		opacity: 0.8;
+	}
+	75% {
+		opacity: 0.4;
+	}
+	100% {
+		opacity: 1;
+	}
+}
