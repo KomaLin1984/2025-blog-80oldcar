@@ -28,32 +28,32 @@ const list = [
 	{
 		icon: ScrollOutlineSVG,
 		iconActive: ScrollFilledSVG,
-		label: '近期文章',
-		href: '/blog'
+		label: '辉光管电子钟',
+		href: '/clock'
 	},
 	{
 		icon: ProjectsOutlineSVG,
 		iconActive: ProjectsFilledSVG,
-		label: '我的项目',
-		href: '/projects'
+		label: '软件分享',
+		href: '/share'
 	},
 	{
 		icon: AboutOutlineSVG,
 		iconActive: AboutFilledSVG,
-		label: '关于网站',
-		href: '/about'
+		label: '我的Github',
+		href: 'https://github.com/KomaLin1984'
 	},
 	{
 		icon: ShareOutlineSVG,
 		iconActive: ShareFilledSVG,
-		label: '推荐分享',
-		href: '/share'
+		label: '近期文章',
+		href: '/blog'
 	},
 	{
 		icon: WebsiteOutlineSVG,
 		iconActive: WebsiteFilledSVG,
-		label: '优秀博客',
-		href: '/bloggers'
+		label: '开心每一天',
+		href: '/pictures'
 	}
 ]
 
