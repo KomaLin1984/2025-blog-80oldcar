@@ -35,7 +35,7 @@ const list = [
 		icon: SoftwareOutlineSVG,
 		iconActive: SoftwareFilledSVG,
 		label: '软件分享',
-		href: '/share'
+		href: 'https://pan.baidu.com/s/19RptjlTk5msnkC0AwgNZ3A'
 	},
 	{
 		icon: GithubOutlineSVG,
