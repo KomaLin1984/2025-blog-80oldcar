@@ -19,6 +19,13 @@ const games = [
 		description: '挖掘黄金，达成目标金额',
 		cover: '/images/games/gold-miner-cover.png',
 		href: '/games/gold-miner'
+	},
+	{
+		id: 'nes',
+		name: 'NES 游戏',
+		description: '经典红白机游戏，需自带 ROM',
+		cover: '/images/games/nes-cover.png',
+		href: '/games/nes'
 	}
 ]
 
