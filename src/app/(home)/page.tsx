@@ -89,10 +89,18 @@ export default function Home() {
 				<BeianCard />
 			</div>
 
-			{/* 移动端仅显示钟表卡片 */}
-			{maxSM && cardStyles.clockCard?.enabled !== false && (
-				<div className='flex flex-col items-center pt-28'>
-					<ClockCard />
+			{/* 移动端所有卡片 */}
+			{maxSM && (
+				<div className='flex flex-col items-center gap-6 pt-28 pb-20'>
+					<ArtCard />
+					<HiCard />
+					{cardStyles.clockCard?.enabled !== false && <ClockCard />}
+					{cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
+					<SocialButtons />
+					<AritcleCard />
+					<LikePosition />
+					<HatCard />
+					<BeianCard />
 				</div>
 			)}
 
