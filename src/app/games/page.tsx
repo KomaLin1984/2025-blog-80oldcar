@@ -12,6 +12,13 @@ const games = [
 		description: '经典坦克大战，支持双人对战',
 		cover: '/images/games/tank-battle-cover.png',
 		href: '/games/tank-battle'
+	},
+	{
+		id: 'gold-miner',
+		name: '黄金矿工',
+		description: '挖掘黄金，达成目标金额',
+		cover: '/images/games/gold-miner-cover.png',
+		href: '/games/gold-miner'
 	}
 ]
 
