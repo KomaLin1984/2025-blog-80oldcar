@@ -3,9 +3,9 @@
 		"width": 366,
 		"height": 228,
 		"order": 13,
-		"offsetX": 188,
-		"offsetY": -378,
-		"enabled": false
+		"offsetX": -195,
+		"offsetY": -380,
+		"enabled": true
 	},
 	"hiCard": {
 		"width": 366,
@@ -20,8 +20,8 @@
 		"height": 228,
 		"offset": 92,
 		"order": 1,
-		"offsetX": -193,
-		"offsetY": -381,
+		"offsetX": 190,
+		"offsetY": -380,
 		"enabled": true
 	},
 	"calendarCard": {
@@ -62,7 +62,7 @@
 		"height": 214,
 		"order": 3,
 		"offsetX": -192,
-		"offsetY": -141,
+		"offsetY": -140,
 		"enabled": true
 	},
 	"writeButtons": {
