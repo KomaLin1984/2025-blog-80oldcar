@@ -76,31 +76,31 @@ export default function Home() {
 
 			{/* 桌面端所有卡片 */}
 			<div className='max-sm:hidden'>
-				<ArtCard />
-				<HiCard />
-				<ClockCard />
-				<CalendarCard />
-				<SocialButtons />
-				<ShareCard />
-				<AritcleCard />
-				<WriteButtons />
-				<LikePosition />
-				<HatCard />
-				<BeianCard />
+				{cardStyles.artCard?.enabled !== false && <ArtCard />}
+				{cardStyles.hiCard?.enabled !== false && <HiCard />}
+				{cardStyles.clockCard?.enabled !== false && <ClockCard />}
+				{cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
+				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
+				{cardStyles.shareCard?.enabled !== false && <ShareCard />}
+				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
+				{cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
+				{cardStyles.likePosition?.enabled !== false && <LikePosition />}
+				{cardStyles.hatCard?.enabled !== false && <HatCard />}
+				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
 			</div>
 
 			{/* 移动端所有卡片 */}
 			{maxSM && (
 				<div className='flex flex-col items-center gap-6 pt-28 pb-20'>
-					<ArtCard />
-					<HiCard />
+					{cardStyles.artCard?.enabled !== false && <ArtCard />}
+					{cardStyles.hiCard?.enabled !== false && <HiCard />}
 					{cardStyles.clockCard?.enabled !== false && <ClockCard />}
 					{cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-					<SocialButtons />
-					<AritcleCard />
-					<LikePosition />
-					<HatCard />
-					<BeianCard />
+					{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
+					{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
+					{cardStyles.likePosition?.enabled !== false && <LikePosition />}
+					{cardStyles.hatCard?.enabled !== false && <HatCard />}
+					{cardStyles.beianCard?.enabled !== false && <BeianCard />}
 				</div>
 			)}
 
