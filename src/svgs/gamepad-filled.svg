@@ -1,0 +1,20 @@
+<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tank body - filled -->
+  <rect x="4" y="14" width="20" height="10" rx="2" fill="currentColor"/>
+  <!-- Tank dome - filled -->
+  <rect x="9" y="10" width="10" height="6" rx="1" fill="currentColor"/>
+  <!-- Tank barrel -->
+  <rect x="13" y="4" width="2" height="8" fill="currentColor"/>
+  <!-- Tank barrel tip -->
+  <rect x="12" y="3" width="4" height="2" fill="currentColor"/>
+  <!-- Left track wheels -->
+  <rect x="5" y="22" width="4" height="3" rx="1" fill="currentColor"/>
+  <rect x="11" y="22" width="4" height="3" rx="1" fill="currentColor"/>
+  <rect x="17" y="22" width="4" height="3" rx="1" fill="currentColor"/>
+  <!-- Right track wheels -->
+  <rect x="5" y="3" width="4" height="3" rx="1" fill="currentColor"/>
+  <rect x="11" y="3" width="4" height="3" rx="1" fill="currentColor"/>
+  <rect x="17" y="3" width="4" height="3" rx="1" fill="currentColor"/>
+  <!-- Star decoration on dome -->
+  <path d="M14 11.5L14.5 13H16L15 14L15.5 15.5L14 14.5L12.5 15.5L13 14L12 13H13.5L14 11.5Z" fill="white" opacity="0.6"/>
+</svg>

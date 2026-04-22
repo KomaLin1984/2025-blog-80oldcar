@@ -15,6 +15,8 @@ import GithubOutlineSVG from '@/svgs/github-outline.svg'
 import GithubFilledSVG from '@/svgs/github-filled.svg'
 import ArticleOutlineSVG from '@/svgs/article-outline.svg'
 import ArticleFilledSVG from '@/svgs/article-filled.svg'
+import GamepadOutlineSVG from '@/svgs/gamepad-outline.svg'
+import GamepadFilledSVG from '@/svgs/gamepad-filled.svg'
 import SmileyOutlineSVG from '@/svgs/smiley-outline.svg'
 import SmileyFilledSVG from '@/svgs/smiley-filled.svg'
 import { usePathname } from 'next/navigation'
@@ -54,6 +56,12 @@ const list = [
 		iconActive: SmileyFilledSVG,
 		label: '开心每一天',
 		href: '/pictures'
+	},
+	{
+		icon: GamepadOutlineSVG,
+		iconActive: GamepadFilledSVG,
+		label: '在线游戏',
+		href: '/games'
 	}
 ]
 
