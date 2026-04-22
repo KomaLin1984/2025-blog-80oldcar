@@ -1,14 +1,14 @@
 {
 	"artCard": {
-		"width": 375,
+		"width": 366,
 		"height": 228,
 		"order": 3,
-		"offsetX": -192,
-		"offsetY": -384,
+		"offsetX": 188,
+		"offsetY": -378,
 		"enabled": true
 	},
 	"hiCard": {
-		"width": 374,
+		"width": 366,
 		"height": 268,
 		"order": 1,
 		"offsetX": -191,
@@ -16,25 +16,25 @@
 		"enabled": false
 	},
 	"clockCard": {
-		"width": 362,
+		"width": 366,
 		"height": 228,
 		"offset": 92,
 		"order": 4,
-		"offsetX": 201,
-		"offsetY": -386,
+		"offsetX": -193,
+		"offsetY": -381,
 		"enabled": true
 	},
 	"calendarCard": {
-		"width": 357,
+		"width": 366,
 		"height": 306,
 		"order": 5,
-		"offsetX": 202,
-		"offsetY": -141,
+		"offsetX": 190,
+		"offsetY": -140,
 		"enabled": true
 	},
 	"musicCard": {
-		"width": 371,
-		"height": 81,
+		"width": 366,
+		"height": 82,
 		"offset": 120,
 		"order": 6,
 		"offsetX": -190,
@@ -58,24 +58,24 @@
 		"enabled": false
 	},
 	"articleCard": {
-		"width": 372,
-		"height": 216,
+		"width": 366,
+		"height": 214,
 		"order": 8,
-		"offsetX": -190,
-		"offsetY": -146,
+		"offsetX": -192,
+		"offsetY": -141,
 		"enabled": true
 	},
 	"writeButtons": {
 		"height": 50,
 		"width": 165,
 		"order": 8,
-		"offsetX": 391,
-		"offsetY": 183,
+		"offsetX": 382,
+		"offsetY": 175,
 		"enabled": true
 	},
 	"navCard": {
-		"width": 257,
-		"height": 558,
+		"width": 259,
+		"height": 547,
 		"order": 2,
 		"offsetX": -469,
 		"offsetY": -380,
