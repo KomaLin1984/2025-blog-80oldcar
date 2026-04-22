@@ -28,32 +28,17 @@ export default function TankBattlePage() {
 				</div>
 			</div>
 
-			{/* 游戏容器 */}
-			<div className='container mx-auto px-4 py-6'>
-				<div className='mx-auto overflow-hidden rounded-2xl border border-white/10 bg-black'>
-					{/* 游戏说明 */}
-					<div className='bg-[#16213e] px-6 py-3 text-center text-sm text-white/80'>
-						<span className='text-yellow-400'>🎮 操作说明：</span>
-						玩家1：WASD移动 + 空格射击 | 玩家2：方向键移动 + Enter射击 | N：下一关 | P：上一关
-					</div>
-
-					{/* 使用 iframe 加载游戏 */}
-					<iframe
-						src='/games/tank-battle/index.html'
-						className='mx-auto block'
-						width='512'
-						height='448'
-						sandbox='allow-scripts allow-same-origin'
-						title='坦克大战'
-					/>
-				</div>
+			{/* 游戏容器 - 全屏居中，不裁剪 */}
+			<div className='flex h-[calc(100vh-120px)] items-center justify-center bg-black'>
+				<iframe
+					src='/games/tank-battle/index.html'
+					width='512'
+					height='448'
+					className='max-w-full bg-black'
+					sandbox='allow-scripts allow-same-origin'
+					title='坦克大战'
+				/>
 			</div>
-
-			<style jsx>{`
-				iframe {
-					max-width: 100%;
-				}
-			`}</style>
 		</div>
 	)
 }

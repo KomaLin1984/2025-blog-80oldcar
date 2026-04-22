@@ -1,0 +1,8 @@
+<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- House filled -->
+  <path d="M14 4L4 12V24H10V18H18V24H24V12L14 4Z" fill="currentColor"/>
+  <!-- Door -->
+  <rect x="12" y="16" width="4" height="6" fill="white" opacity="0.4"/>
+  <!-- Roof highlight -->
+  <path d="M14 4L4 12H10V12L14 4Z" fill="white" opacity="0.2"/>
+</svg>

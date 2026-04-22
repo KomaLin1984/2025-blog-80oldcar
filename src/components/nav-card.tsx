@@ -9,6 +9,8 @@ import { useCenterStore } from '@/hooks/use-center'
 import { CARD_SPACING } from '@/consts'
 import ClockOutlineSVG from '@/svgs/clock-outline.svg'
 import ClockFilledSVG from '@/svgs/clock-filled.svg'
+import HomeOutlineSVG from '@/svgs/home-outline.svg'
+import HomeFilledSVG from '@/svgs/home-filled.svg'
 import SoftwareOutlineSVG from '@/svgs/software-outline.svg'
 import SoftwareFilledSVG from '@/svgs/software-filled.svg'
 import GithubOutlineSVG from '@/svgs/github-outline.svg'
@@ -27,6 +29,12 @@ import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { HomeDraggableLayer } from '@/app/(home)/home-draggable-layer'
 
 const list = [
+	{
+		icon: HomeOutlineSVG,
+		iconActive: HomeFilledSVG,
+		label: '网站首页',
+		href: '/'
+	},
 	{
 		icon: ClockOutlineSVG,
 		iconActive: ClockFilledSVG,

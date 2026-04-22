@@ -26,34 +26,15 @@
 			width: 100%; 
 			height: 100%; 
 			overflow: hidden;
-			background: #1a1a2e;
+			background: #000;
 		}
 		.container {
 			width: 100%;
 			height: 100%;
 			display: flex;
-			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-		}
-		head {
-			background: #16213e;
-			color: #fff;
-			padding: 8px;
-			text-align: center;
-			font-size: 12px;
-			flex-shrink: 0;
-			width: 100%;
-		}
-		h3 { font-weight: normal; }
-		.main {
-			flex: 1;
-			position: relative;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 100%;
-			overflow: hidden;
+			background: #000;
 		}
 		#canvasDiv {
 			position: relative;
@@ -63,24 +44,19 @@
 		}
 		#canvasDiv canvas {
 			position: absolute;
-			width: 100%;
-			height: 100%;
+			width: 512px;
+			height: 448px;
 		}
 	</style>
 </head>
 <body>
 	<div class="container">
-		<head>
-			<h3>操作说明：玩家1：wasd上左下右，space射击；玩家2：方向键，enter射击。n下一关，p上一关。</h3>
-		</head>
-		<div class="main clearfix">
-			<div id="canvasDiv">
-				<canvas id="wallCanvas"></canvas>
-				<canvas id="tankCanvas"></canvas>
-				<canvas id="grassCanvas"></canvas>
-				<canvas id="overCanvas"></canvas>
-				<canvas id="stageCanvas"></canvas>
-			</div>
+		<div id="canvasDiv">
+			<canvas id="wallCanvas"></canvas>
+			<canvas id="tankCanvas"></canvas>
+			<canvas id="grassCanvas"></canvas>
+			<canvas id="overCanvas"></canvas>
+			<canvas id="stageCanvas"></canvas>
 		</div>
 	</div>
 </body>
