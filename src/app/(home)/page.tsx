@@ -46,9 +46,7 @@ export default function Home() {
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-		}
+		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [setConfigDialogOpen])
 
 	return (
@@ -76,19 +74,27 @@ export default function Home() {
 				</div>
 			)}
 
-			<div className='max-sm:flex max-sm:flex-col max-sm:items-center max-sm:gap-6 max-sm:pt-28 max-sm:pb-20'>
-				{cardStyles.artCard?.enabled !== false && <ArtCard />}
-				{cardStyles.hiCard?.enabled !== false && <HiCard />}
-				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
-				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
-				{!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
-				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
-				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
-				{cardStyles.likePosition?.enabled !== false && <LikePosition />}
-				{cardStyles.hatCard?.enabled !== false && <HatCard />}
-				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
+			{/* 桌面端所有卡片 */}
+			<div className='max-sm:hidden'>
+				<ArtCard />
+				<HiCard />
+				<ClockCard />
+				<CalendarCard />
+				<SocialButtons />
+				<ShareCard />
+				<AritcleCard />
+				<WriteButtons />
+				<LikePosition />
+				<HatCard />
+				<BeianCard />
 			</div>
+
+			{/* 移动端仅显示钟表卡片 */}
+			{maxSM && cardStyles.clockCard?.enabled !== false && (
+				<div className='flex flex-col items-center pt-28'>
+					<ClockCard />
+				</div>
+			)}
 
 			{siteContent.enableChristmas && <SnowfallBackground zIndex={2} count={!maxSM ? 125 : 20} />}
 			<ConfigDialog open={configDialogOpen} onClose={() => setConfigDialogOpen(false)} />
