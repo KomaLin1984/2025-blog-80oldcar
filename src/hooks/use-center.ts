@@ -22,7 +22,7 @@ const computeCenter = () => {
 	const height = window.innerHeight
 	return {
 		x: Math.floor(width / 2),
-		y: Math.floor(height / 2) - 24,
+		y: Math.floor(height / 2) + 60, // 整体下移，让卡片居中偏下，避免被浏览器顶部UI遮挡
 		centerX: Math.floor(width / 2),
 		centerY: Math.floor(height / 2),
 		width,
