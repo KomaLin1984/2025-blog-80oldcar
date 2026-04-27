@@ -5,6 +5,7 @@ import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { useSize } from '@/hooks/use-size'
+import { useCenterStore } from '@/hooks/use-center'
 
 interface Props {
 	className?: string
@@ -18,8 +19,15 @@ interface Props {
 
 export default function Card({ children, order, width, height, x, y, className }: Props) {
 	const { maxSM, init } = useSize()
+	const { scale } = useCenterStore()
 	let [show, setShow] = useState(false)
 	if (maxSM && init) order = 0
+
+	// 响应式缩放：应用 scale 因子到位置和尺寸
+	const scaledX = x * scale
+	const scaledY = y * scale
+	const scaledWidth = width * scale
+	const scaledHeight = height ? height * scale : undefined
 
 	useEffect(() => {
 		if (show) return
@@ -36,8 +44,8 @@ export default function Card({ children, order, width, height, x, y, className }
 		return (
 			<motion.div
 				className={cn('card squircle', className)}
-				initial={{ opacity: 0, scale: 0.6, left: x, top: y, width, height }}
-				animate={{ opacity: 1, scale: 1, left: x, top: y, width, height }}
+				initial={{ opacity: 0, scale: 0.6, left: scaledX, top: scaledY, width: scaledWidth, height: scaledHeight }}
+				animate={{ opacity: 1, scale: 1, left: scaledX, top: scaledY, width: scaledWidth, height: scaledHeight }}
 				whileHover={{ scale: 1.05 }}
 				whileTap={{ scale: 0.95 }}>
 				{children}
