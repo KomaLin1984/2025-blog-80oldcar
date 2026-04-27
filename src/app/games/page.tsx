@@ -10,7 +10,7 @@ const games = [
 		id: 'tank-battle',
 		name: '坦克大战',
 		description: '经典坦克大战，支持双人对战',
-		cover: '/images/games/tank-battle-cover.png',
+		cover: '/images/games/tank-battle-cover.jpg',
 		href: '/games/tank-battle'
 	}
 ]
@@ -45,24 +45,11 @@ export default function GamesPage() {
 						<Link href={game.href}>
 							<div className='relative aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] transition-transform hover:scale-[1.02] hover:shadow-lg'>
 								{/* 游戏封面 */}
-								<div className='flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e]'>
-									{/* 如果没有封面图，显示默认坦克图标 */}
-									<div className='text-[var(--color-brand)]'>
-										<svg viewBox='0 0 80 80' fill='currentColor' className='h-20 w-20 opacity-80'>
-											<rect x='10' y='40' width='60' height='30' rx='4' />
-											<rect x='25' y='28' width='30' height='18' rx='3' />
-											<rect x='38' y='10' width='4' height='22' />
-											<rect x='36' y='8' width='8' height='4' />
-											<rect x='12' y='66' width='12' height='8' rx='2' />
-											<rect x='32' y='66' width='12' height='8' rx='2' />
-											<rect x='52' y='66' width='12' height='8' rx='2' />
-											<rect x='12' y='6' width='12' height='8' rx='2' />
-											<rect x='32' y='6' width='12' height='8' rx='2' />
-											<rect x='52' y='6' width='12' height='8' rx='2' />
-										</svg>
-									</div>
-								</div>
-
+								<img
+									src={game.cover}
+									alt={game.name}
+									className='absolute inset-0 h-full w-full object-cover'
+								/>
 								{/* 游戏信息 */}
 								<div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4'>
 									<h3 className='text-lg font-medium text-white'>{game.name}</h3>
