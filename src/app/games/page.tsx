@@ -10,7 +10,7 @@ const games = [
 		id: 'tank-battle',
 		name: '坦克大战',
 		description: '经典坦克大战，支持双人对战',
-		cover: '/images/games/tank-battle-cover.jpg',
+		cover: '/images/games/tank-battle-cover.png',
 		href: '/games/tank-battle'
 	}
 ]
