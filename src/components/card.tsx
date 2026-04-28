@@ -41,10 +41,11 @@ export default function Card({ children, order, width, height, x, y, className, 
 		if (!show) return null
 		return (
 			<div
-				className={cn('card squircle relative', className)}
+				className={cn('card squircle', className)}
 				style={{
 					width,
-					height
+					height,
+					position: 'relative'
 				}}>
 				{children}
 			</div>
