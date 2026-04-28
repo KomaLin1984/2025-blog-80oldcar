@@ -36,11 +36,16 @@ export default function Card({ children, order, width, height, x, y, className, 
 		)
 	}, [x, y, show])
 
-	// 静态定位时使用普通 div，带淡入动画
+	// 静态定位时使用普通 div
 	if (isStatic) {
 		if (!show) return null
 		return (
-			<div className={cn('card squircle !absolute', className)} style={{ width, height }}>
+			<div
+				className={cn('card squircle relative', className)}
+				style={{
+					width,
+					height
+				}}>
 				{children}
 			</div>
 		)
