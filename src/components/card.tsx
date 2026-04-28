@@ -22,6 +22,9 @@ export default function Card({ children, order, width, height, x, y, className, 
 	let [show, setShow] = useState(false)
 	if (maxSM && init) order = 0
 
+	// 手机端强制静态定位时使用普通 div + CSS 动画，避免 motion 动画问题
+	const isStatic = staticPosition && maxSM && init
+
 	useEffect(() => {
 		if (show) return
 		if (x === 0 && y === 0) return
@@ -33,26 +36,25 @@ export default function Card({ children, order, width, height, x, y, className, 
 		)
 	}, [x, y, show])
 
-	// 手机端或强制静态定位时，不使用绝对定位
-	const isStatic = staticPosition || (maxSM && init)
+	// 静态定位时使用普通 div，带淡入动画
+	if (isStatic) {
+		if (!show) return null
+		return (
+			<div className={cn('card squircle', className)} style={{ width, height }}>
+				{children}
+			</div>
+		)
+	}
 
+	// 绝对定位时使用 motion 动画
 	if (show)
 		return (
 			<motion.div
-				className={cn('card squircle', className, isStatic && 'relative')}
-				animate={
-					isStatic
-						? undefined
-						: { opacity: 1, scale: 1, left: x, top: y, width, height: height }
-				}
-				initial={
-					isStatic
-						? { opacity: 0 }
-						: { opacity: 0, scale: 0.6, left: x, top: y, width, height: height }
-				}
-				transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-				whileHover={isStatic ? undefined : { scale: 1.05 }}
-				whileTap={isStatic ? undefined : { scale: 0.95 }}>
+				className={cn('card squircle', className)}
+				initial={{ opacity: 0, scale: 0.6, left: x, top: y, width, height }}
+				animate={{ opacity: 1, scale: 1, left: x, top: y, width, height }}
+				whileHover={{ scale: 1.05 }}
+				whileTap={{ scale: 0.95 }}>
 				{children}
 			</motion.div>
 		)
