@@ -29,7 +29,7 @@ const PlayModeIcon = ({ mode }: { mode: PlayMode }) => {
   }
 }
 
-export default function MusicCard() {
+export default function MusicCard({ staticPosition }: { staticPosition?: boolean }) {
   const pathname = usePathname()
   const center = useCenterStore()
   const { cardStyles } = useConfigStore()
@@ -201,7 +201,7 @@ export default function MusicCard() {
 
   return (
     <HomeDraggableLayer cardKey='musicCard' x={x} y={y} width={styles.width} height={showPlaylist ? 300 : styles.height}>
-      <Card order={styles.order} width={styles.width} height={showPlaylist ? 300 : styles.height} x={x} y={y} className={clsx('flex flex-col', !isHomePage && 'fixed')}>
+      <Card staticPosition={staticPosition} order={styles.order} width={styles.width} height={showPlaylist ? 300 : styles.height} x={x} y={y} className={clsx('flex flex-col', !isHomePage && 'fixed')}>
         <div className="flex items-center gap-2 px-3 py-2.5">
           <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
             <MusicSVG className="w-full h-full" />

@@ -11,6 +11,7 @@ import WriteButtons from '@/app/(home)/write-buttons'
 import LikePosition from './like-position'
 import HatCard from './hat-card'
 import BeianCard from './beian-card'
+import MusicCard from '@/components/music-card'
 import { useSize } from '@/hooks/use-size'
 import { motion } from 'motion/react'
 import { useLayoutEditStore } from './stores/layout-edit-store'
@@ -89,18 +90,24 @@ export default function Home() {
 				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
 			</div>
 
-			{/* 移动端所有卡片 */}
+			{/* 移动端简化布局：时钟、最新文章、音乐播放器 */}
 			{maxSM && (
 				<div className='flex flex-col items-center gap-6 pt-28 pb-20'>
-					{cardStyles.artCard?.enabled !== false && <ArtCard />}
-					{cardStyles.hiCard?.enabled !== false && <HiCard />}
-					{cardStyles.clockCard?.enabled !== false && <ClockCard />}
-					{cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-					{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
-					{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
-					{cardStyles.likePosition?.enabled !== false && <LikePosition />}
-					{cardStyles.hatCard?.enabled !== false && <HatCard />}
-					{cardStyles.beianCard?.enabled !== false && <BeianCard />}
+					{cardStyles.clockCard?.enabled !== false && (
+						<div className='w-full max-w-[366px]'>
+							<ClockCard staticPosition />
+						</div>
+					)}
+					{cardStyles.articleCard?.enabled !== false && (
+						<div className='w-full max-w-[366px]'>
+							<AritcleCard staticPosition />
+						</div>
+					)}
+					{cardStyles.musicCard?.enabled !== false && (
+						<div className='w-full max-w-[366px]'>
+							<MusicCard staticPosition />
+						</div>
+					)}
 				</div>
 			)}
 

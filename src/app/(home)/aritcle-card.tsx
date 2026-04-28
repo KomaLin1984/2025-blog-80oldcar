@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { HomeDraggableLayer } from './home-draggable-layer'
 
-export default function ArticleCard() {
+export default function ArticleCard({ staticPosition }: { staticPosition?: boolean }) {
 	const center = useCenterStore()
 	const { cardStyles, siteContent } = useConfigStore()
 	const { blog, loading } = useLatestBlog()
@@ -20,7 +20,7 @@ export default function ArticleCard() {
 
 	return (
 		<HomeDraggableLayer cardKey='articleCard' x={x} y={y} width={styles.width} height={styles.height}>
-			<Card order={styles.order} width={styles.width} height={styles.height} x={x} y={y} className='space-y-2 max-sm:static'>
+			<Card staticPosition={staticPosition} order={styles.order} width={styles.width} height={styles.height} x={x} y={y} className='space-y-2 max-sm:static'>
 				{siteContent.enableChristmas && (
 					<>
 						<img

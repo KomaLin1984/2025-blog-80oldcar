@@ -119,7 +119,7 @@ function NixieColon() {
 	)
 }
 
-export default function ClockCard() {
+export default function ClockCard({ staticPosition }: { staticPosition?: boolean }) {
 	const router = useRouter()
 	const center = useCenterStore()
 	const { cardStyles, siteContent } = useConfigStore()
@@ -147,7 +147,7 @@ export default function ClockCard() {
 
 	return (
 		<HomeDraggableLayer cardKey='clockCard' x={x} y={y} width={styles.width} height={styles.height}>
-			<Card order={styles.order} width={styles.width} height={styles.height} x={x} y={y} className='p-0'>
+			<Card staticPosition={staticPosition} order={styles.order} width={styles.width} height={styles.height} x={x} y={y} className='p-0'>
 				{siteContent.enableChristmas && (
 					<>
 						<img
