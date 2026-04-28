@@ -40,7 +40,7 @@ export default function Card({ children, order, width, height, x, y, className, 
 	if (isStatic) {
 		if (!show) return null
 		return (
-			<div className={cn('card squircle', className)} style={{ width, height }}>
+			<div className={cn('card squircle !absolute', className)} style={{ width, height }}>
 				{children}
 			</div>
 		)
