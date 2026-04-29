@@ -25,14 +25,17 @@ const initState = {
 const computeSize = (): Omit<SizeState, 'recalc'> => {
 	if (typeof window !== 'undefined') {
 		const width = window.innerWidth
+		// 检测横屏模式，强制保持竖屏断点
+		const isLandscape = window.matchMedia('(orientation: landscape)').matches
+		const effectiveWidth = isLandscape ? Math.min(width, 430) : width
 
 		return {
 			init: true,
-			maxXL: width < 1280,
-			maxLG: width < 1024,
-			maxMD: width < 768,
-			maxSM: width < 640,
-			maxXS: width < 360
+			maxXL: effectiveWidth < 1280,
+			maxLG: effectiveWidth < 1024,
+			maxMD: effectiveWidth < 768,
+			maxSM: effectiveWidth < 640,
+			maxXS: effectiveWidth < 360
 		}
 	}
 
@@ -50,8 +53,15 @@ export function useSizeInit() {
 	useEffect(() => {
 		const update = () => useSizeStore.getState().recalc()
 		update()
+
+		// 监听 resize 和屏幕方向变化
 		window.addEventListener('resize', update)
-		return () => window.removeEventListener('resize', update)
+		window.matchMedia('(orientation: landscape)').addEventListener('change', update)
+
+		return () => {
+			window.removeEventListener('resize', update)
+			window.matchMedia('(orientation: landscape)').removeEventListener('change', update)
+		}
 	}, [])
 }
 
