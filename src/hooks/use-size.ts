@@ -25,9 +25,11 @@ const initState = {
 const computeSize = (): Omit<SizeState, 'recalc'> => {
 	if (typeof window !== 'undefined') {
 		const width = window.innerWidth
-		// 检测横屏模式，强制保持竖屏断点
+		// 检测横屏模式，强制保持竖屏断点（仅对手机尺寸生效）
 		const isLandscape = window.matchMedia('(orientation: landscape)').matches
-		const effectiveWidth = isLandscape ? Math.min(width, 430) : width
+		// 只有当屏幕宽度本身就小于768px（手机范围）时才启用横屏限制
+		const isMobileWidth = width < 768
+		const effectiveWidth = isLandscape && isMobileWidth ? Math.min(width, 430) : width
 
 		return {
 			init: true,
