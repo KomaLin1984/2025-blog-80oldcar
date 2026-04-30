@@ -216,7 +216,8 @@
 
 /* ===== 手机旋转锁定竖屏布局 ===== */
 /* 当手机旋转到横屏时，保持竖屏的视觉宽度和移动端布局 */
-@media screen and (orientation: landscape) {
+/* 仅在手机尺寸（<=768px）横屏时生效，避免影响电脑端 */
+@media screen and (orientation: landscape) and (max-width: 768px) {
 	/* 强制锁定最大宽度为手机竖屏宽度 */
 	:root, html, body {
 		min-width: 100vw !important;
