@@ -12,6 +12,13 @@ const games = [
 		description: '经典坦克大战，支持双人对战',
 		cover: '/images/games/tank-battle-cover.png',
 		href: '/games/tank-battle'
+	},
+	{
+		id: 'nes',
+		name: 'NES 游戏',
+		description: '经典红白机游戏，需自行添加 ROM',
+		cover: '/images/games/nes-cover.svg',
+		href: '/games/nes'
 	}
 ]
 
