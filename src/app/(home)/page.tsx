@@ -13,6 +13,7 @@ import HatCard from './hat-card'
 import BeianCard from './beian-card'
 import MusicCard from '@/components/music-card'
 import { useSize } from '@/hooks/use-size'
+import { useCenterStore } from '@/hooks/use-center'
 import { motion } from 'motion/react'
 import { useLayoutEditStore } from './stores/layout-edit-store'
 import { useConfigStore } from './stores/config-store'
@@ -27,6 +28,8 @@ export default function Home() {
 	const editing = useLayoutEditStore(state => state.editing)
 	const saveEditing = useLayoutEditStore(state => state.saveEditing)
 	const cancelEditing = useLayoutEditStore(state => state.cancelEditing)
+	const center = useCenterStore()
+	const centerReady = center.ready
 
 	const handleSave = () => {
 		saveEditing()

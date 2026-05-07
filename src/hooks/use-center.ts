@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 
 type CenterState = {
+	ready: boolean
 	x: number
 	y: number
 	centerX: number
@@ -30,7 +31,8 @@ const computeCenter = () => {
 	}
 }
 
-export const useCenterStore = create<CenterState>(set => ({
+export const useCenterStore = create<CenterState>((set) => ({
+	ready: false,
 	x: 0,
 	y: 0,
 	centerX: 0,
@@ -40,7 +42,7 @@ export const useCenterStore = create<CenterState>(set => ({
 	setCenter: (x, y) => set({ x, y }),
 	recalc: () => {
 		const c = computeCenter()
-		set({ x: c.x, y: c.y, width: c.width, height: c.height, centerX: c.centerX, centerY: c.centerY })
+		set({ ready: true, x: c.x, y: c.y, width: c.width, height: c.height, centerX: c.centerX, centerY: c.centerY })
 	}
 }))
 
