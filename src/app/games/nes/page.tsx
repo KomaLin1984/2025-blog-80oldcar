@@ -4,18 +4,18 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { Browser } from 'jsnes'
 
-// NES 游戏列表
+// NES 游戏列表（文件名需与 public/nes/roms/ 目录下的实际ROM文件匹配）
 const nesGames = [
 	{
 		id: 'super-mario-bros',
 		name: '超级玛丽',
-		filename: 'super-mario-bros.nes',
+		filename: '(W) Super Mario Bros. [!].nes',
 		controls: '方向键移动，A 跳，B 加速'
 	},
 	{
 		id: 'contra',
 		name: '魂斗罗',
-		filename: 'contra.nes',
+		filename: 'Contra1(U)30.nes',
 		controls: '方向键移动，A 射击，B 跳跃'
 	}
 ]
@@ -49,10 +49,10 @@ export default function NESGamePage() {
 			const buffer = await response.arrayBuffer()
 			const array = new Uint8Array(buffer)
 
-			// 使用 jsnes Browser API
+			// 使用 jsnes Browser API (直接传 Uint8Array，不要转成普通数组)
 			browserRef.current = new Browser({
 				container: containerRef.current,
-				romData: Array.from(array),
+				romData: array,
 				onError: (e: Error) => {
 					setError(`游戏运行错误: ${e.message}`)
 					setIsLoading(false)
