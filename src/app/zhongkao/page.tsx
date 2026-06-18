@@ -7,13 +7,10 @@ import schoolsData from '@/data/zhongkao-schools.json'
 // ============ 配置区（小林在这里修改）============
 const PAYMENT_CONFIG = {
   price: 5, // 定价（元）
-  wechatQRUrl: '/images/payment/wechat-qr.jpg', // 微信收款码图片
-  alipayQRUrl: '/images/payment/alipay-qr.jpg', // 支付宝收款码图片
-  // 或者用付款链接（二选一）
-  wechatPayLink: '', // 微信收钱码链接
-  alipayPayLink: '', // 支付宝收款链接
+  // Worker 后端地址（部署后填这里）
+  workerUrl: 'https://zhongkao-payment.your-subdomain.workers.dev', // TODO: 部署 Worker 后填这里
 }
-const USE_PAYMENT_LINKS = false // true=用链接跳转，false=显示二维码图片
+const USE_SIMULATION = true // true=模拟模式（无真实商户号），false=真实支付
 // ================================================
 
 interface School {
@@ -44,9 +41,14 @@ export default function ZhongkaoPage() {
   const [showPayment, setShowPayment] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [isPaid, setIsPaid] = useState(false)
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // 支付相关状态
+  const [currentOrderId, setCurrentOrderId] = useState<string>('')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'paid'>('idle')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'wechat' | 'alipay'>('wechat')
 
   // 根据分数估算位次（模拟公式）
   const estimateRank = (s: number): number => {
@@ -104,12 +106,74 @@ export default function ZhongkaoPage() {
     setShowPayment(true)
   }
 
-  const handlePaymentSuccess = () => {
+  // 创建订单并获取支付二维码
+  const handleViewReport = async (school: School) => {
+    setSelectedSchool(school)
+    setPaymentStatus('idle')
+    setQrCodeUrl('')
+    setShowPayment(true)
+    
+    if (USE_SIMULATION) {
+      // 模拟模式：直接显示模拟二维码
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mock-payment-${Date.now()}`)
+      setPaymentStatus('pending')
+      return
+    }
+    
+    try {
+      const response = await fetch(`${PAYMENT_CONFIG.workerUrl}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: school.id,
+          schoolName: school.name,
+          paymentMethod: selectedPaymentMethod
+        })
+      })
+      const data = await response.json()
+      
+      if (data.codeUrl) {
+        setCurrentOrderId(data.orderId)
+        setQrCodeUrl(data.codeUrl)
+        setPaymentStatus('pending')
+        
+        // 启动 SSE 监听支付结果
+        startPaymentListener(data.orderId)
+      } else {
+        alert('创建订单失败: ' + (data.error || '未知错误'))
+      }
+    } catch (e) {
+      alert('网络错误，请重试')
+    }
+  }
+  
+  // SSE 监听支付结果
+  const startPaymentListener = (orderId: string) => {
+    const eventSource = new EventSource(`${PAYMENT_CONFIG.workerUrl}/api/listen-order?orderId=${orderId}`)
+    
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      if (data.type === 'paid') {
+        setPaymentStatus('paid')
+        eventSource.close()
+        // 延迟一下，让用户看到"支付成功"提示
+        setTimeout(() => {
+          handleRealPaymentSuccess()
+        }, 1500)
+      }
+    }
+    
+    eventSource.onerror = () => {
+      // SSE 断开时不处理（可能是超时）
+    }
+  }
+  
+  // 真实支付成功后处理
+  const handleRealPaymentSuccess = () => {
     setShowPayment(false)
     setIsPaid(true)
     setIsGenerating(true)
-
-    // 模拟AI生成报告
+    
     setTimeout(() => {
       const report = `【${selectedSchool?.name}】综合分析报告
 
@@ -137,6 +201,14 @@ ${selectedSchool?.catering_detail}
       setIsGenerating(false)
       setShowReport(true)
     }, 1500)
+  }
+  
+  // 模拟支付成功（开发测试用）
+  const handleSimulatePayment = () => {
+    setPaymentStatus('paid')
+    setTimeout(() => {
+      handleRealPaymentSuccess()
+    }, 1000)
   }
 
   return (
@@ -293,80 +365,75 @@ ${selectedSchool?.catering_detail}
                 支付 <span className='text-xl font-bold text-red-500'>{PAYMENT_CONFIG.price} 元</span> 立即获取【{selectedSchool.name}】师资深度剖析、家长正负面真实评价及食宿详情
               </p>
 
-              {USE_PAYMENT_LINKS ? (
-                // 方案：付款链接（跳转微信/支付宝）
-                <div className='mb-4 space-y-3'>
-                  {PAYMENT_CONFIG.wechatPayLink && (
-                    <a
-                      href={PAYMENT_CONFIG.wechatPayLink}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='flex items-center justify-center gap-2 rounded-lg bg-green-500 py-3 font-medium text-white transition hover:bg-green-600'
-                    >
-                      🟢 微信支付 {PAYMENT_CONFIG.price} 元
-                    </a>
-                  )}
-                  {PAYMENT_CONFIG.alipayPayLink && (
-                    <a
-                      href={PAYMENT_CONFIG.alipayPayLink}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='flex items-center justify-center gap-2 rounded-lg bg-blue-500 py-3 font-medium text-white transition hover:bg-blue-600'
-                    >
-                      🔵 支付宝支付 {PAYMENT_CONFIG.price} 元
-                    </a>
-                  )}
-                </div>
-              ) : (
-                // 方案：二维码图片（并排横板）
-                <div className='mb-4'>
-                  <div className='flex gap-4'>
-                    <div className='flex-1 text-center'>
-                      <p className='mb-2 text-sm font-medium text-slate-600'>👑 微信支付</p>
-                      <div className='rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
-                        <img src={PAYMENT_CONFIG.wechatQRUrl} alt='微信支付' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
-                      </div>
-                    </div>
-                    <div className='flex-1 text-center'>
-                      <p className='mb-2 text-sm font-medium text-slate-600'>💙 支付宝</p>
-                      <div className='rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
-                        <img src={PAYMENT_CONFIG.alipayQRUrl} alt='支付宝' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
-                      </div>
-                    </div>
-                  </div>
+              {/* 支付方式切换 */}
+              {!USE_SIMULATION && (
+                <div className='mb-4 flex rounded-lg bg-slate-100 p-1'>
+                  <button
+                    onClick={() => setSelectedPaymentMethod('wechat')}
+                    className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+                      selectedPaymentMethod === 'wechat' ? 'bg-white shadow text-green-600' : 'text-slate-500'
+                    }`}
+                  >
+                    👑 微信支付
+                  </button>
+                  <button
+                    onClick={() => setSelectedPaymentMethod('alipay')}
+                    className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
+                      selectedPaymentMethod === 'alipay' ? 'bg-white shadow text-blue-600' : 'text-slate-500'
+                    }`}
+                  >
+                    💙 支付宝
+                  </button>
                 </div>
               )}
 
-              {/* 付款确认勾选 */}
-              <label className='mb-4 flex cursor-pointer items-center gap-2 rounded-lg bg-slate-50 p-3'>
-                <input
-                  type='checkbox'
-                  checked={paymentConfirmed}
-                  onChange={e => setPaymentConfirmed(e.target.checked)}
-                  className='h-5 w-5 rounded border-slate-300 text-green-500 focus:ring-green-500'
-                />
-                <span className='text-sm text-slate-600'>我已成功支付 {PAYMENT_CONFIG.price} 元</span>
-              </label>
-
-              <div className='space-y-3'>
-                <button
-                  onClick={handlePaymentSuccess}
-                  disabled={!paymentConfirmed}
-                  className={`w-full rounded-lg py-3 font-medium transition ${
-                    paymentConfirmed
-                      ? 'bg-green-500 text-white hover:bg-green-600'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  我已付款，查看报告
-                </button>
-                <button
-                  onClick={() => setShowPayment(false)}
-                  className='w-full rounded-lg border border-slate-200 py-3 text-slate-600 transition hover:bg-slate-50'
-                >
-                  取消
-                </button>
+              {/* 二维码区域 */}
+              <div className='mb-4'>
+                {paymentStatus === 'paid' ? (
+                  <div className='flex flex-col items-center justify-center py-6'>
+                    <div className='mb-3 text-5xl'>✅</div>
+                    <p className='text-lg font-medium text-green-600'>支付成功！</p>
+                    <p className='text-sm text-slate-500'>正在打开报告...</p>
+                  </div>
+                ) : qrCodeUrl ? (
+                  <div className='flex flex-col items-center'>
+                    <div className='mb-3 rounded-xl bg-white p-3 shadow-md'>
+                      {/* 扫码提示 */}
+                      <p className='mb-2 text-center text-sm text-slate-600'>
+                        {selectedPaymentMethod === 'wechat' ? '👑 微信' : '💙 支付宝'} 扫描下方二维码支付 {PAYMENT_CONFIG.price} 元
+                      </p>
+                      {/* 二维码 */}
+                      <img 
+                        src={qrCodeUrl} 
+                        alt='支付二维码' 
+                        className='mx-auto h-48 w-48'
+                      />
+                    </div>
+                    <p className='text-sm text-slate-500'>支付成功后页面将自动更新</p>
+                  </div>
+                ) : (
+                  <div className='flex h-48 items-center justify-center'>
+                    <div className='h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800' />
+                  </div>
+                )}
               </div>
+
+              {/* 模拟模式下的测试按钮 */}
+              {USE_SIMULATION && paymentStatus !== 'paid' && (
+                <button
+                  onClick={handleSimulatePayment}
+                  className='mb-4 w-full rounded-lg bg-slate-100 py-3 text-sm text-slate-600 transition hover:bg-slate-200'
+                >
+                  🎮 模拟支付成功（测试用）
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowPayment(false)}
+                className='w-full rounded-lg border border-slate-200 py-3 text-slate-600 transition hover:bg-slate-50'
+              >
+                取消
+              </button>
             </motion.div>
           </motion.div>
         )}
