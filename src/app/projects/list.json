@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "name": "西安中考AI志愿助手",
+    "year": 2026,
+    "description": "基于位次的智能匹配算法，为西安城六区考生提供冲稳保三重策略建议",
+    "image": "https://www.80oldcar.com/images/art/1.jpg",
+    "url": "/zhongkao",
+    "tags": ["AI", "中考", "志愿", "西安"]
+  }
+]
