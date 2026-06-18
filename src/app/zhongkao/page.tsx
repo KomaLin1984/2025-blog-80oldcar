@@ -44,6 +44,7 @@ export default function ZhongkaoPage() {
   const [showPayment, setShowPayment] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [isPaid, setIsPaid] = useState(false)
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false)
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -317,27 +318,45 @@ ${selectedSchool?.catering_detail}
                   )}
                 </div>
               ) : (
-                // 方案：二维码图片
-                <div className='mb-4 space-y-4'>
-                  <div className='text-center'>
-                    <p className='mb-2 text-sm font-medium text-slate-600'>👑 微信支付</p>
-                    <div className='mx-auto max-w-[200px] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
-                      <img src={PAYMENT_CONFIG.wechatQRUrl} alt='微信支付' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                // 方案：二维码图片（并排横板）
+                <div className='mb-4'>
+                  <div className='flex gap-4'>
+                    <div className='flex-1 text-center'>
+                      <p className='mb-2 text-sm font-medium text-slate-600'>👑 微信支付</p>
+                      <div className='rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
+                        <img src={PAYMENT_CONFIG.wechatQRUrl} alt='微信支付' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                      </div>
                     </div>
-                  </div>
-                  <div className='text-center'>
-                    <p className='mb-2 text-sm font-medium text-slate-600'>💙 支付宝</p>
-                    <div className='mx-auto max-w-[200px] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
-                      <img src={PAYMENT_CONFIG.alipayQRUrl} alt='支付宝' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                    <div className='flex-1 text-center'>
+                      <p className='mb-2 text-sm font-medium text-slate-600'>💙 支付宝</p>
+                      <div className='rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
+                        <img src={PAYMENT_CONFIG.alipayQRUrl} alt='支付宝' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* 付款确认勾选 */}
+              <label className='mb-4 flex cursor-pointer items-center gap-2 rounded-lg bg-slate-50 p-3'>
+                <input
+                  type='checkbox'
+                  checked={paymentConfirmed}
+                  onChange={e => setPaymentConfirmed(e.target.checked)}
+                  className='h-5 w-5 rounded border-slate-300 text-green-500 focus:ring-green-500'
+                />
+                <span className='text-sm text-slate-600'>我已成功支付 {PAYMENT_CONFIG.price} 元</span>
+              </label>
+
               <div className='space-y-3'>
                 <button
                   onClick={handlePaymentSuccess}
-                  className='w-full rounded-lg bg-green-500 py-3 font-medium text-white transition hover:bg-green-600'
+                  disabled={!paymentConfirmed}
+                  className={`w-full rounded-lg py-3 font-medium transition ${
+                    paymentConfirmed
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
                   我已付款，查看报告
                 </button>
