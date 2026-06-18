@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "西安曲江第一中学",
+    "district": "雁塔区",
+    "avg_pickup_rank": 2500,
+    "quota_3years": "2023年40人，2024年42人，2025年45人",
+    "teachers_highlight": "省市级教学能手占比高，核心管理团队经验丰富",
+    "positive_reviews": "环境优美，硬件设施极新，管理规范，学习氛围浓厚",
+    "negative_reviews": "周边早晚高峰较拥堵，作业量相对较大",
+    "catering_detail": "配有现代化食堂，提供营养配餐；目前主要针对远距离学生提供少量宿位",
+    "image_url": "/images/art/1.jpg"
+  },
+  {
+    "id": 2,
+    "name": "西安铁一中",
+    "district": "碑林区",
+    "avg_pickup_rank": 300,
+    "quota_3years": "2023年60人，2024年65人，2025年68人",
+    "teachers_highlight": "顶尖名师云集，竞赛教练团队强大",
+    "positive_reviews": "教学质量极高，管理严格，高考成绩突出",
+    "negative_reviews": "压力较大，竞争激烈，学习节奏快",
+    "catering_detail": "食堂伙食西安顶尖，有高标准全寄宿宿舍",
+    "image_url": "/images/art/2.jpg"
+  },
+  {
+    "id": 3,
+    "name": "交大附中",
+    "district": "碑林区",
+    "avg_pickup_rank": 500,
+    "quota_3years": "2023年55人，2024年58人，2025年60人",
+    "teachers_highlight": "思维培养极佳，注重综合素质发展",
+    "positive_reviews": "校风自由，注重素质教育，学生创新能力突出",
+    "negative_reviews": "对自律性要求极高，节奏相对轻松",
+    "catering_detail": "食堂品种丰富，硬件设施老牌但维护良好",
+    "image_url": "/images/art/3.jpg"
+  },
+  {
+    "id": 4,
+    "name": "西北工业大学附属中学",
+    "district": "碑林区",
+    "avg_pickup_rank": 200,
+    "quota_3years": "2023年50人，2024年52人，2025年55人",
+    "teachers_highlight": "依托西工大资源，科技创新教育领先",
+    "positive_reviews": "校风严谨，竞赛成绩优异，升学率高",
+    "negative_reviews": "课业压力大，课外活动时间相对较少",
+    "catering_detail": "食堂品质高，宿舍条件良好",
+    "image_url": "/images/art/4.jpg"
+  },
+  {
+    "id": 5,
+    "name": "西安高新第一中学",
+    "district": "高新区",
+    "avg_pickup_rank": 400,
+    "quota_3years": "2023年65人，2024年68人，2025年70人",
+    "teachers_highlight": "国际化视野，外教资源丰富，创新课程多",
+    "positive_reviews": "硬件一流，校园环境好，学生综合素质高",
+    "negative_reviews": "学费较高，竞争激烈",
+    "catering_detail": "多元化餐饮选择，国际部配有专门餐厅",
+    "image_url": "/images/art/5.jpg"
+  }
+]
