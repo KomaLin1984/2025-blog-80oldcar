@@ -101,11 +101,6 @@ export default function ZhongkaoPage() {
     setMatchedSchools(calculateMatches(rank))
   }
 
-  const handleViewReport = (school: School) => {
-    setSelectedSchool(school)
-    setShowPayment(true)
-  }
-
   // 创建订单并获取支付二维码
   const handleViewReport = async (school: School) => {
     setSelectedSchool(school)
