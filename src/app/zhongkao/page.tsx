@@ -212,7 +212,7 @@ ${selectedSchool?.catering_detail}
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12'>
+    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 pt-24 pb-12 sm:pt-12'>
       <div className='mx-auto max-w-3xl'>
         {/* 标题 */}
         <motion.div
