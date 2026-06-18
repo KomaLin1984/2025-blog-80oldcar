@@ -7,8 +7,8 @@ import schoolsData from '@/data/zhongkao-schools.json'
 // ============ 配置区（小林在这里修改）============
 const PAYMENT_CONFIG = {
   price: 5, // 定价（元）
-  wechatQRUrl: '/images/payment/wechat-qr.png', // 微信收款码图片（放到 public/images/payment/ 下）
-  alipayQRUrl: '/images/payment/alipay-qr.png', // 支付宝收款码图片
+  wechatQRUrl: '/images/payment/wechat-qr.jpg', // 微信收款码图片
+  alipayQRUrl: '/images/payment/alipay-qr.jpg', // 支付宝收款码图片
   // 或者用付款链接（二选一）
   wechatPayLink: '', // 微信收钱码链接
   alipayPayLink: '', // 支付宝收款链接
