@@ -4,6 +4,18 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import schoolsData from '@/data/zhongkao-schools.json'
 
+// ============ 配置区（小林在这里修改）============
+const PAYMENT_CONFIG = {
+  price: 5, // 定价（元）
+  wechatQRUrl: '/images/payment/wechat-qr.png', // 微信收款码图片（放到 public/images/payment/ 下）
+  alipayQRUrl: '/images/payment/alipay-qr.png', // 支付宝收款码图片
+  // 或者用付款链接（二选一）
+  wechatPayLink: '', // 微信收钱码链接
+  alipayPayLink: '', // 支付宝收款链接
+}
+const USE_PAYMENT_LINKS = false // true=用链接跳转，false=显示二维码图片
+// ================================================
+
 interface School {
   id: number
   name: string
@@ -277,22 +289,57 @@ ${selectedSchool?.catering_detail}
                 🔓 解锁AI深度图文报告
               </h3>
               <p className='mb-4 text-slate-600'>
-                支付 <span className='text-xl font-bold text-red-500'>5 元</span> 立即获取【{selectedSchool.name}】师资深度剖析、家长正负面真实评价及食宿详情
+                支付 <span className='text-xl font-bold text-red-500'>{PAYMENT_CONFIG.price} 元</span> 立即获取【{selectedSchool.name}】师资深度剖析、家长正负面真实评价及食宿详情
               </p>
 
-              <div className='mb-4 flex h-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50'>
-                <div className='text-center text-slate-400'>
-                  <p className='text-4xl mb-2'>📱</p>
-                  <p>微信/支付宝收款码</p>
+              {USE_PAYMENT_LINKS ? (
+                // 方案：付款链接（跳转微信/支付宝）
+                <div className='mb-4 space-y-3'>
+                  {PAYMENT_CONFIG.wechatPayLink && (
+                    <a
+                      href={PAYMENT_CONFIG.wechatPayLink}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center justify-center gap-2 rounded-lg bg-green-500 py-3 font-medium text-white transition hover:bg-green-600'
+                    >
+                      🟢 微信支付 {PAYMENT_CONFIG.price} 元
+                    </a>
+                  )}
+                  {PAYMENT_CONFIG.alipayPayLink && (
+                    <a
+                      href={PAYMENT_CONFIG.alipayPayLink}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='flex items-center justify-center gap-2 rounded-lg bg-blue-500 py-3 font-medium text-white transition hover:bg-blue-600'
+                    >
+                      🔵 支付宝支付 {PAYMENT_CONFIG.price} 元
+                    </a>
+                  )}
                 </div>
-              </div>
+              ) : (
+                // 方案：二维码图片
+                <div className='mb-4 space-y-4'>
+                  <div className='text-center'>
+                    <p className='mb-2 text-sm font-medium text-slate-600'>👑 微信支付</p>
+                    <div className='mx-auto max-w-[200px] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
+                      <img src={PAYMENT_CONFIG.wechatQRUrl} alt='微信支付' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                    </div>
+                  </div>
+                  <div className='text-center'>
+                    <p className='mb-2 text-sm font-medium text-slate-600'>💙 支付宝</p>
+                    <div className='mx-auto max-w-[200px] rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-2'>
+                      <img src={PAYMENT_CONFIG.alipayQRUrl} alt='支付宝' className='w-full' onError={e => (e.currentTarget.style.display = 'none')} />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className='space-y-3'>
                 <button
                   onClick={handlePaymentSuccess}
                   className='w-full rounded-lg bg-green-500 py-3 font-medium text-white transition hover:bg-green-600'
                 >
-                  我已付款（模拟）
+                  我已付款，查看报告
                 </button>
                 <button
                   onClick={() => setShowPayment(false)}
