@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import schoolsData from '@/data/zhongkao-schools.json'
 
 // ============ 配置区（小林在这里修改）============
 const PAYMENT_CONFIG = {
-  price: 5, // 定价（元）
-  // Worker 后端地址（部署后填这里）
-  workerUrl: 'https://zhongkao-payment.your-subdomain.workers.dev', // TODO: 部署 Worker 后填这里
+  price: 2, // 定价（元）
+  // 支付后端地址（留空则使用相对路径，生产环境填完整域名）
+  backendUrl: '',
+  // 例如: backendUrl: 'https://pay.80oldcar.com'
 }
-const USE_SIMULATION = true // true=模拟模式（无真实商户号），false=真实支付
 // ================================================
 
 interface School {
@@ -38,17 +38,62 @@ export default function ZhongkaoPage() {
   const [matchedSchools, setMatchedSchools] = useState<MatchedSchools | null>(null)
   const [rankEstimate, setRankEstimate] = useState<number>(0)
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null)
-  const [showPayment, setShowPayment] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [isPaid, setIsPaid] = useState(false)
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
-  
-  // 支付相关状态
+
+  // 二维码弹窗状态
+  const [showQR, setShowQR] = useState(false)
+  const [qrCode, setQrCode] = useState<string>('')
   const [currentOrderId, setCurrentOrderId] = useState<string>('')
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'paid'>('idle')
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'wechat' | 'alipay'>('wechat')
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false)
+  const [orderError, setOrderError] = useState<string>('')
+
+  const backend = PAYMENT_CONFIG.backendUrl || ''
+
+  // 页面加载时检查支付结果（从支付宝跳转回来）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('result')
+    const scoreParam = params.get('score')
+    const orderIdParam = params.get('order_id')
+
+    if (result === 'paid' && scoreParam) {
+      setIsPaid(true)
+      setScore(scoreParam)
+
+      const s = parseInt(scoreParam)
+      const rank = estimateRank(s)
+      setRankEstimate(rank)
+      setMatchedSchools(calculateMatches(rank))
+
+      window.history.replaceState({}, '', '/zhongkao')
+    } else if (orderIdParam) {
+      // 有 orderId 但无 paid 状态，说明用户在支付宝页面取消了
+      // 此时先查一下订单状态
+      checkOrderStatus(orderIdParam)
+    }
+  }, [])
+
+  // 检查订单状态（兜底）
+  async function checkOrderStatus(orderId: string) {
+    try {
+      const resp = await fetch(`${backend}/api/query-order?orderId=${orderId}`)
+      const data = await resp.json()
+      if (data.status === 'paid') {
+        const scoreParam = new URLSearchParams(window.location.search).get('score')
+        if (scoreParam) {
+          setIsPaid(true)
+          setScore(scoreParam)
+          const s = parseInt(scoreParam)
+          setRankEstimate(estimateRank(s))
+          setMatchedSchools(calculateMatches(estimateRank(s)))
+          window.history.replaceState({}, '', '/zhongkao')
+        }
+      }
+    } catch {}
+  }
 
   // 根据分数估算位次（模拟公式）
   const estimateRank = (s: number): number => {
@@ -69,18 +114,14 @@ export default function ZhongkaoPage() {
       const diff = userRank - lineRank
 
       if (diff > 500) {
-        // 冲：考生位次比学校录取位次靠后较多，但还在合理范围
         result.chong.push(school)
       } else if (diff >= -200 && diff <= 500) {
-        // 稳：考生位次接近学校录取位次
         result.wen.push(school)
       } else {
-        // 保：考生位次比学校录取位次靠前较多
         result.bao.push(school)
       }
     })
 
-    // 按位次排序
     const sortByRank = (a: School, b: School) => a.avg_pickup_rank - b.avg_pickup_rank
     result.chong.sort(sortByRank)
     result.wen.sort(sortByRank)
@@ -89,126 +130,145 @@ export default function ZhongkaoPage() {
     return result
   }
 
-  const handleSubmit = () => {
+  // 点击"开始智能匹配学校" - 创建订单 + 显示二维码
+  const handleSubmit = async () => {
     const s = parseInt(score)
     if (!s || s < 400 || s > 700) {
       alert('请输入有效的中考分数（400-700分）')
       return
     }
 
-    const rank = estimateRank(s)
-    setRankEstimate(rank)
-    setMatchedSchools(calculateMatches(rank))
-  }
+    setIsCreatingOrder(true)
+    setOrderError('')
+    setQrCode('')
 
-  // 创建订单并获取支付二维码
-  const handleViewReport = async (school: School) => {
-    setSelectedSchool(school)
-    setPaymentStatus('idle')
-    setQrCodeUrl('')
-    setShowPayment(true)
-    
-    if (USE_SIMULATION) {
-      // 模拟模式：直接显示模拟二维码
-      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mock-payment-${Date.now()}`)
-      setPaymentStatus('pending')
-      return
-    }
-    
     try {
-      const response = await fetch(`${PAYMENT_CONFIG.workerUrl}/api/create-order`, {
+      // 1. 创建订单
+      const resp = await fetch(`${backend}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schoolId: school.id,
-          schoolName: school.name,
-          paymentMethod: selectedPaymentMethod
-        })
+        body: JSON.stringify({ score: s }),
       })
-      const data = await response.json()
-      
-      if (data.codeUrl) {
-        setCurrentOrderId(data.orderId)
-        setQrCodeUrl(data.codeUrl)
-        setPaymentStatus('pending')
-        
-        // 启动 SSE 监听支付结果
-        startPaymentListener(data.orderId)
-      } else {
-        alert('创建订单失败: ' + (data.error || '未知错误'))
+      const data = await resp.json()
+
+      if (!data.success) {
+        setOrderError(data.error || '创建订单失败')
+        setIsCreatingOrder(false)
+        return
       }
-    } catch (e) {
-      alert('网络错误，请重试')
+
+      setCurrentOrderId(data.orderId)
+      setQrCode(data.qrCode || '')
+      setShowQR(true)
+
+      // 2. 连接 SSE，监听支付状态
+      listenOrder(data.orderId, s)
+    } catch (e: any) {
+      setOrderError('网络错误，请重试: ' + e.message)
+      setIsCreatingOrder(false)
     }
   }
-  
-  // SSE 监听支付结果
-  const startPaymentListener = (orderId: string) => {
-    const eventSource = new EventSource(`${PAYMENT_CONFIG.workerUrl}/api/listen-order?orderId=${orderId}`)
-    
+
+  // SSE 监听订单状态
+  function listenOrder(orderId: string, scoreValue: number) {
+    const eventSource = new EventSource(`${backend}/api/listen-order?orderId=${orderId}`)
+
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data)
+
       if (data.type === 'paid') {
-        setPaymentStatus('paid')
         eventSource.close()
-        // 延迟一下，让用户看到"支付成功"提示
-        setTimeout(() => {
-          handleRealPaymentSuccess()
-        }, 1500)
+        setShowQR(false)
+        setIsCreatingOrder(false)
+        setIsPaid(true)
+        setScore(scoreValue.toString())
+
+        const rank = estimateRank(scoreValue)
+        setRankEstimate(rank)
+        setMatchedSchools(calculateMatches(rank))
+      }
+
+      if (data.type === 'timeout') {
+        eventSource.close()
+        setOrderError('支付超时，请重新发起')
+        setIsCreatingOrder(false)
+      }
+
+      if (data.type === 'error') {
+        eventSource.close()
+        setOrderError(data.message || '订单异常')
+        setIsCreatingOrder(false)
       }
     }
-    
+
     eventSource.onerror = () => {
-      // SSE 断开时不处理（可能是超时）
+      // SSE 断开时尝试 HTTP 轮询兜底
+      eventSource.close()
+      pollOrderStatus(orderId, scoreValue)
     }
   }
-  
-  // 真实支付成功后处理
-  const handleRealPaymentSuccess = () => {
-    setShowPayment(false)
-    setIsPaid(true)
+
+  // HTTP 轮询兜底（SSE 不可用时）
+  async function pollOrderStatus(orderId: string, scoreValue: number, attempts = 0) {
+    if (attempts > 30) {
+      setOrderError('支付查询超时，请稍后刷新重试')
+      return
+    }
+    try {
+      const resp = await fetch(`${backend}/api/query-order?orderId=${orderId}`)
+      const data = await resp.json()
+      if (data.status === 'paid') {
+        setShowQR(false)
+        setIsPaid(true)
+        setScore(scoreValue.toString())
+        const rank = estimateRank(scoreValue)
+        setRankEstimate(rank)
+        setMatchedSchools(calculateMatches(rank))
+        return
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 2000))
+    pollOrderStatus(orderId, scoreValue, attempts + 1)
+  }
+
+  // 查看学校深度AI报告
+  const handleViewReport = (school: School) => {
+    setSelectedSchool(school)
     setIsGenerating(true)
-    
+    setShowReport(true)
+
     setTimeout(() => {
-      const report = `【${selectedSchool?.name}】综合分析报告
+      const report = `【${school.name}】综合分析报告
 
 🏫 学校概况
-所属区县：${selectedSchool?.district}
-历史录取基准位次：约第 ${selectedSchool?.avg_pickup_rank} 名
-定向生名额：${selectedSchool?.quota_3years}
+所属区县：${school.district}
+历史录取基准位次：约第 ${school.avg_pickup_rank} 名
+定向生名额：${school.quota_3years}
 
 👨‍🏫 师资力量
-${selectedSchool?.teachers_highlight}
+${school.teachers_highlight}
 
 👍 家长正面评价
-${selectedSchool?.positive_reviews}
+${school.positive_reviews}
 
 ⚠️ 注意事项
-${selectedSchool?.negative_reviews}
+${school.negative_reviews}
 
 🍔 餐饮住宿
-${selectedSchool?.catering_detail}
+${school.catering_detail}
 
 ---
 本报告由 AI 辅助生成，仅供参考。具体录取情况请以官方发布为准。`
 
       setAiReport(report)
       setIsGenerating(false)
-      setShowReport(true)
-    }, 1500)
-  }
-  
-  // 模拟支付成功（开发测试用）
-  const handleSimulatePayment = () => {
-    setPaymentStatus('paid')
-    setTimeout(() => {
-      handleRealPaymentSuccess()
     }, 1000)
   }
 
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 pt-24 pb-12 sm:pt-12'>
       <div className='mx-auto max-w-3xl'>
+
         {/* 标题 */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -257,12 +317,23 @@ ${selectedSchool?.catering_detail}
             />
           </div>
 
-          <button
-            onClick={handleSubmit}
-            className='w-full rounded-lg bg-slate-800 py-4 text-lg font-medium text-white transition hover:bg-slate-700'
-          >
-            开始智能匹配学校
-          </button>
+          {!isPaid ? (
+            <button
+              onClick={handleSubmit}
+              disabled={isCreatingOrder}
+              className='w-full rounded-lg bg-teal-500 py-4 text-lg font-medium text-white transition hover:bg-teal-600 disabled:opacity-60'
+            >
+              {isCreatingOrder ? '正在创建订单...' : `开始智能匹配学校（需支付 ${PAYMENT_CONFIG.price} 元）`}
+            </button>
+          ) : (
+            <div className='rounded-lg bg-green-50 py-4 text-center text-green-600'>
+              ✅ 已支付成功，正在显示匹配结果...
+            </div>
+          )}
+
+          {orderError && (
+            <p className='mt-3 text-center text-sm text-red-500'>{orderError}</p>
+          )}
         </motion.div>
 
         {/* 结果展示 */}
@@ -276,7 +347,6 @@ ${selectedSchool?.catering_detail}
             >
               {/* 位次估算 */}
               <div className='mb-6 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 p-4 text-center text-white'>
-                <p className='text-sm opacity-90'>根据计分新政预估</p>
                 <p className='text-2xl font-bold'>
                   您今年的全统位次大约在第 <span className='text-3xl'>{rankEstimate}</span> 名左右
                 </p>
@@ -336,98 +406,50 @@ ${selectedSchool?.catering_detail}
         </p>
       </div>
 
-      {/* 支付弹窗 */}
+      {/* 支付二维码弹窗 */}
       <AnimatePresence>
-        {showPayment && selectedSchool && (
+        {showQR && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'
-            onClick={() => setShowPayment(false)}
+            className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
           >
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className='w-full max-w-sm rounded-2xl bg-white p-6'
-              onClick={e => e.stopPropagation()}
+              className='w-full max-w-sm rounded-2xl bg-white p-6 text-center'
             >
-              <h3 className='mb-2 text-xl font-bold text-slate-800'>
-                🔓 解锁AI深度图文报告
-              </h3>
-              <p className='mb-4 text-slate-600'>
-                支付 <span className='text-xl font-bold text-red-500'>{PAYMENT_CONFIG.price} 元</span> 立即获取【{selectedSchool.name}】师资深度剖析、家长正负面真实评价及食宿详情
-              </p>
+              <h3 className='mb-2 text-lg font-bold text-slate-800'>📱 支付宝扫码支付</h3>
+              <p className='mb-4 text-sm text-slate-500'>支付 {PAYMENT_CONFIG.price} 元后自动显示结果</p>
 
-              {/* 支付方式切换 */}
-              {!USE_SIMULATION && (
-                <div className='mb-4 flex rounded-lg bg-slate-100 p-1'>
-                  <button
-                    onClick={() => setSelectedPaymentMethod('wechat')}
-                    className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-                      selectedPaymentMethod === 'wechat' ? 'bg-white shadow text-green-600' : 'text-slate-500'
-                    }`}
-                  >
-                    👑 微信支付
-                  </button>
-                  <button
-                    onClick={() => setSelectedPaymentMethod('alipay')}
-                    className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-                      selectedPaymentMethod === 'alipay' ? 'bg-white shadow text-blue-600' : 'text-slate-500'
-                    }`}
-                  >
-                    💙 支付宝
-                  </button>
-                </div>
-              )}
-
-              {/* 二维码区域 */}
-              <div className='mb-4'>
-                {paymentStatus === 'paid' ? (
-                  <div className='flex flex-col items-center justify-center py-6'>
-                    <div className='mb-3 text-5xl'>✅</div>
-                    <p className='text-lg font-medium text-green-600'>支付成功！</p>
-                    <p className='text-sm text-slate-500'>正在打开报告...</p>
-                  </div>
-                ) : qrCodeUrl ? (
-                  <div className='flex flex-col items-center'>
-                    <div className='mb-3 rounded-xl bg-white p-3 shadow-md'>
-                      {/* 扫码提示 */}
-                      <p className='mb-2 text-center text-sm text-slate-600'>
-                        {selectedPaymentMethod === 'wechat' ? '👑 微信' : '💙 支付宝'} 扫描下方二维码支付 {PAYMENT_CONFIG.price} 元
-                      </p>
-                      {/* 二维码 */}
-                      <img 
-                        src={qrCodeUrl} 
-                        alt='支付二维码' 
-                        className='mx-auto h-48 w-48'
-                      />
-                    </div>
-                    <p className='text-sm text-slate-500'>支付成功后页面将自动更新</p>
-                  </div>
+              {/* 二维码 */}
+              <div className='mx-auto mb-4 flex items-center justify-center rounded-xl bg-white p-4'>
+                {qrCode ? (
+                  <img
+                    src={qrCode.startsWith('http') ? qrCode : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`}
+                    alt='支付二维码'
+                    className='h-52 w-52'
+                  />
                 ) : (
-                  <div className='flex h-48 items-center justify-center'>
-                    <div className='h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800' />
-                  </div>
+                  <div className='h-52 w-52 animate-pulse rounded-xl bg-slate-100' />
                 )}
               </div>
 
-              {/* 模拟模式下的测试按钮 */}
-              {USE_SIMULATION && paymentStatus !== 'paid' && (
-                <button
-                  onClick={handleSimulatePayment}
-                  className='mb-4 w-full rounded-lg bg-slate-100 py-3 text-sm text-slate-600 transition hover:bg-slate-200'
-                >
-                  🎮 模拟支付成功（测试用）
-                </button>
-              )}
+              <p className='text-xs text-slate-400'>
+                支付成功后页面将自动跳转<br />请勿关闭此页面
+              </p>
 
               <button
-                onClick={() => setShowPayment(false)}
-                className='w-full rounded-lg border border-slate-200 py-3 text-slate-600 transition hover:bg-slate-50'
+                onClick={() => {
+                  setShowQR(false)
+                  setOrderError('您取消了支付，如需继续请重新发起')
+                  setIsCreatingOrder(false)
+                }}
+                className='mt-4 w-full rounded-lg border border-slate-200 py-2 text-sm text-slate-500 transition hover:bg-slate-50'
               >
-                取消
+                取消支付
               </button>
             </motion.div>
           </motion.div>
@@ -467,7 +489,6 @@ ${selectedSchool?.catering_detail}
               <button
                 onClick={() => {
                   setShowReport(false)
-                  setIsPaid(false)
                   setSelectedSchool(null)
                 }}
                 className='mt-4 w-full rounded-lg border border-slate-200 py-3 text-slate-600 transition hover:bg-slate-50'
