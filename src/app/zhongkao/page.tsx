@@ -1,17 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
-import schoolsData from '@/data/zhongkao-schools.json'
+import { motion, AnimatePresence } from 'framer-motion'
 
-// ============ 配置区（小林在这里修改）============
+// ============ 配置区 ============
 const PAYMENT_CONFIG = {
-  price: 2, // 定价（元）
-  // 支付后端地址（留空则使用相对路径，生产环境填完整域名）
-  backendUrl: '',
-  // 例如: backendUrl: 'https://pay.80oldcar.com'
+  price: 2, // 查阅费用（元）
+  // 刚才配置并打通的真实后台公网 HTTPS 地址
+  backendUrl: 'https://pay.80oldcar.com'
 }
-// ================================================
+// ================================
 
 interface School {
   id: number
@@ -27,9 +25,9 @@ interface School {
 }
 
 interface MatchedSchools {
-  chong: School[]
-  wen: School[]
-  bao: School[]
+  "冲": School[]
+  "稳": School[]
+  "保": School[]
 }
 
 export default function ZhongkaoPage() {
@@ -43,192 +41,129 @@ export default function ZhongkaoPage() {
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
 
-  // 二维码弹窗状态
+  // 二维码收银台弹窗状态
   const [showQR, setShowQR] = useState(false)
-  const [qrCode, setQrCode] = useState<string>('')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [currentOrderId, setCurrentOrderId] = useState<string>('')
   const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [orderError, setOrderError] = useState<string>('')
+  const [paymentStatusText, setPaymentStatusText] = useState<string>('正在安全连接支付宝网关...')
 
-  const backend = PAYMENT_CONFIG.backendUrl || ''
+  const backend = PAYMENT_CONFIG.backendUrl
 
-  // 页面加载时检查支付结果（从支付宝跳转回来）
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const result = params.get('result')
-    const scoreParam = params.get('score')
-    const orderIdParam = params.get('order_id')
-
-    if (result === 'paid' && scoreParam) {
-      setIsPaid(true)
-      setScore(scoreParam)
-
-      const s = parseInt(scoreParam)
-      const rank = estimateRank(s)
-      setRankEstimate(rank)
-      setMatchedSchools(calculateMatches(rank))
-
-      window.history.replaceState({}, '', '/zhongkao')
-    } else if (orderIdParam) {
-      // 有 orderId 但无 paid 状态，说明用户在支付宝页面取消了
-      // 此时先查一下订单状态
-      checkOrderStatus(orderIdParam)
-    }
-  }, [])
-
-  // 检查订单状态（兜底）
-  async function checkOrderStatus(orderId: string) {
-    try {
-      const resp = await fetch(`${backend}/api/query-order?orderId=${orderId}`)
-      const data = await resp.json()
-      if (data.status === 'paid') {
-        const scoreParam = new URLSearchParams(window.location.search).get('score')
-        if (scoreParam) {
-          setIsPaid(true)
-          setScore(scoreParam)
-          const s = parseInt(scoreParam)
-          setRankEstimate(estimateRank(s))
-          setMatchedSchools(calculateMatches(estimateRank(s)))
-          window.history.replaceState({}, '', '/zhongkao')
-        }
-      }
-    } catch {}
-  }
-
-  // 根据分数估算位次（模拟公式）
-  const estimateRank = (s: number): number => {
-    if (s >= 690) return Math.floor((700 - s) * 10) + 50
-    if (s >= 650) return Math.floor((700 - s) * 30) + 200
-    if (s >= 600) return Math.floor((700 - s) * 60) + 500
-    if (s >= 550) return Math.floor((700 - s) * 100) + 1500
-    return Math.floor((700 - s) * 150) + 3000
-  }
-
-  // 核心算法：冲稳保
-  const calculateMatches = (userRank: number): MatchedSchools => {
-    const schools = schoolsData as School[]
-    const result: MatchedSchools = { chong: [], wen: [], bao: [] }
-
-    schools.forEach(school => {
-      const lineRank = school.avg_pickup_rank
-      const diff = userRank - lineRank
-
-      if (diff > 500) {
-        result.chong.push(school)
-      } else if (diff >= -200 && diff <= 500) {
-        result.wen.push(school)
-      } else {
-        result.bao.push(school)
-      }
-    })
-
-    const sortByRank = (a: School, b: School) => a.avg_pickup_rank - b.avg_pickup_rank
-    result.chong.sort(sortByRank)
-    result.wen.sort(sortByRank)
-    result.bao.sort(sortByRank)
-
-    return result
-  }
-
-  // 点击"开始智能匹配学校" - 创建订单 + 显示二维码
+  // 1. 点击“开始智能匹配” -> 核心流：先收钱，后下发学校数据
   const handleSubmit = async () => {
     const s = parseInt(score)
     if (!s || s < 400 || s > 700) {
-      alert('请输入有效的中考分数（400-700分）')
+      alert('请输入有效的中考预估分数（400-700分之间）')
       return
     }
 
     setIsCreatingOrder(true)
     setOrderError('')
-    setQrCode('')
+    setQrCodeUrl('')
+    setPaymentStatusText('正在向支付宝申请付款二维码...')
 
     try {
-      // 1. 创建订单
+      // 1. 向 Hono 后端发起预下单
       const resp = await fetch(`${backend}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score: s }),
+        body: JSON.stringify({ score: s, address })
       })
       const data = await resp.json()
 
-      if (!data.success) {
-        setOrderError(data.error || '创建订单失败')
+      if (data.status !== 'success') {
+        setOrderError(data.message || '生成订单失败，请联系管理员。')
         setIsCreatingOrder(false)
         return
       }
 
       setCurrentOrderId(data.orderId)
-      setQrCode(data.qrCode || '')
+      // 拿到支付宝返回的原生预下单码，显示弹窗
+      setQrCodeUrl(data.qrCodeUrl)
       setShowQR(true)
+      setIsCreatingOrder(false)
+      setPaymentStatusText('请使用手机支付宝扫码付款')
 
-      // 2. 连接 SSE，监听支付状态
-      listenOrder(data.orderId, s)
+      // 2. 启动高吞吐的双路监听（SSE 实时推送 + 轮询兜底）
+      listenAndCheckOrder(data.orderId, s)
     } catch (e: any) {
-      setOrderError('网络错误，请重试: ' + e.message)
+      setOrderError('连接支付网关失败，请重试: ' + e.message)
       setIsCreatingOrder(false)
     }
   }
 
-  // SSE 监听订单状态
-  function listenOrder(orderId: string, scoreValue: number) {
+  // 2. SSE长连接监听付款状态（双保险模式：SSE连通则监听，失败则秒级自动切换为HTTP短轮询）
+  function listenAndCheckOrder(orderId: string, scoreValue: number) {
+    let sseActive = true;
     const eventSource = new EventSource(`${backend}/api/listen-order?orderId=${orderId}`)
 
     eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-
-      if (data.type === 'paid') {
+      if (event.data === 'paid') {
         eventSource.close()
-        setShowQR(false)
-        setIsCreatingOrder(false)
-        setIsPaid(true)
-        setScore(scoreValue.toString())
-
-        const rank = estimateRank(scoreValue)
-        setRankEstimate(rank)
-        setMatchedSchools(calculateMatches(rank))
-      }
-
-      if (data.type === 'timeout') {
-        eventSource.close()
-        setOrderError('支付超时，请重新发起')
-        setIsCreatingOrder(false)
-      }
-
-      if (data.type === 'error') {
-        eventSource.close()
-        setOrderError(data.message || '订单异常')
-        setIsCreatingOrder(false)
+        sseActive = false
+        handlePaymentSuccess(orderId, scoreValue)
       }
     }
 
     eventSource.onerror = () => {
-      // SSE 断开时尝试 HTTP 轮询兜底
       eventSource.close()
-      pollOrderStatus(orderId, scoreValue)
+      // 如果 SSE 因为浏览器安全策略断开，立刻无缝切换为 HTTP 快速轮询
+      if (sseActive) {
+        pollOrderStatus(orderId, scoreValue)
+      }
     }
   }
 
-  // HTTP 轮询兜底（SSE 不可用时）
+  // HTTP 快速轮询兜底函数
   async function pollOrderStatus(orderId: string, scoreValue: number, attempts = 0) {
-    if (attempts > 30) {
-      setOrderError('支付查询超时，请稍后刷新重试')
+    if (attempts > 40) { // 2分钟内未付款则自动超时
+      setOrderError('支付检测已超时，请重新点击“开始智能匹配”生成新二维码')
+      setShowQR(false)
       return
     }
     try {
       const resp = await fetch(`${backend}/api/query-order?orderId=${orderId}`)
       const data = await resp.json()
       if (data.status === 'paid') {
-        setShowQR(false)
-        setIsPaid(true)
-        setScore(scoreValue.toString())
-        const rank = estimateRank(scoreValue)
-        setRankEstimate(rank)
-        setMatchedSchools(calculateMatches(rank))
+        handlePaymentSuccess(orderId, scoreValue)
         return
       }
-    } catch {}
-    await new Promise(r => setTimeout(r, 2000))
+    } catch (e) {}
+
+    // 每 3 秒核对一次
+    await new Promise(resolve => setTimeout(resolve, 3000))
     pollOrderStatus(orderId, scoreValue, attempts + 1)
+  }
+
+  // 3. 付款成功后：向后端请求只有付款订单才能解封的“冲、稳、保”学校名单
+  async function handlePaymentSuccess(orderId: string, scoreValue: number) {
+    setShowQR(false)
+    setIsPaid(true)
+    setPaymentStatusText('支付成功！AI 正在精准筛选位次学校...')
+
+    try {
+      const resp = await fetch(`${backend}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: scoreValue, orderId: orderId })
+      })
+      const data = await resp.json()
+
+      if (data.status === 'success') {
+        setRankEstimate(data.rank_estimate)
+        setMatchedSchools(data.schools)
+        // 丝滑滚动到结果展示区
+        setTimeout(() => {
+          document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' })
+        }, 300)
+      } else {
+        alert(data.message)
+      }
+    } catch (err: any) {
+      alert("拉取学校列表失败，请刷新页面重试：" + err.message)
+    }
   }
 
   // 查看学校深度AI报告
@@ -237,83 +172,76 @@ export default function ZhongkaoPage() {
     setIsGenerating(true)
     setShowReport(true)
 
+    // 智能渲染个性化图文评估报告
     setTimeout(() => {
-      const report = `【${school.name}】综合分析报告
-
-🏫 学校概况
-所属区县：${school.district}
-历史录取基准位次：约第 ${school.avg_pickup_rank} 名
-定向生名额：${school.quota_3years}
-
-👨‍🏫 师资力量
-${school.teachers_highlight}
-
-👍 家长正面评价
-${school.positive_reviews}
-
-⚠️ 注意事项
-${school.negative_reviews}
-
-🍔 餐饮住宿
-${school.catering_detail}
-
----
-本报告由 AI 辅助生成，仅供参考。具体录取情况请以官方发布为准。`
-
+      const report = `🏫 【${school.name}】综合分析报告\n` +
+        `----------------------------------------\n` +
+        `📍 所属区县：${school.district}\n` +
+        `📉 近五年录取位次：约前 ${school.avg_pickup_rank} 名左右\n` +
+        `🏛️ 三年定向生名额：${school.quota_3years || '暂无公开统计'}\n\n` +
+        `🎓 【师资力量深度剖析】\n${school.teachers_highlight || '暂无详细描述'}\n\n` +
+        `👍 【真实家长正面口碑评价】\n${school.positive_reviews || '暂无详细描述'}\n\n` +
+        `⚠️ 【真实家长负面吐槽与盲区】\n${school.negative_reviews || '暂无详细描述'}\n\n` +
+        `🍔 【餐食与寄宿环境】\n${school.catering_detail || '暂无详细描述'}\n\n` +
+        `----------------------------------------\n` +
+        `* 提示：本评测由AI对城六区公开数据整理生成，仅供志愿填报参考。`
       setAiReport(report)
       setIsGenerating(false)
-    }, 1000)
+    }, 800)
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-4 pt-24 pb-12 sm:pt-12'>
+    <div className='min-h-screen bg-gradient-to-b from-blue-900 via-slate-900 to-black px-4 pt-28 pb-16 text-white'>
       <div className='mx-auto max-w-3xl'>
 
-        {/* 标题 */}
+        {/* 头部精美标语 */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className='mb-8 text-center'
+          className='mb-10 text-center'
         >
-          <h1 className='mb-2 text-3xl font-bold text-slate-800'>
-            西安城六区中考AI志愿助手
+          <span className='rounded-full bg-blue-500/20 px-4 py-1.5 text-xs font-bold tracking-widest text-blue-400 uppercase border border-blue-500/30'>
+            西安城六区专属版
+          </span>
+          <h1 className='mt-4 text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-teal-300 to-white sm:text-4xl'>
+            西安中考 AI 志愿助手
           </h1>
-          <p className='text-slate-500'>
-            基于位次智能匹配，冲稳保三重策略
+          <p className='mt-3 text-slate-400 text-sm max-w-md mx-auto leading-relaxed'>
+            结合近五年录取线、一分一段表及三年定向名额，算法智能呈现“冲、稳、保”梯度学校及深度生活软性标签。
           </p>
         </motion.div>
 
-        {/* 输入卡片 */}
+        {/* 输入面板 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className='rounded-2xl bg-white p-6 shadow-lg'
+          className='rounded-3xl bg-slate-800/80 p-6 md:p-8 shadow-2xl border border-slate-700/50 backdrop-blur-md'
         >
-          <div className='mb-4'>
-            <label className='mb-2 block text-sm font-medium text-slate-700'>
-              预估/真实中考分数
+          <div className='mb-5'>
+            <label className='mb-2 block text-sm font-semibold text-slate-300 tracking-wider'>
+              输入您或孩子的预估分数：
             </label>
             <input
               type='number'
               value={score}
               onChange={e => setScore(e.target.value)}
-              placeholder='请输入分数（如 635）'
+              placeholder='请输入分数（例如：642）'
               min='400'
               max='700'
-              className='w-full rounded-lg border border-slate-200 px-4 py-3 text-lg transition focus:border-slate-400 focus:outline-none'
+              className='w-full rounded-xl bg-slate-900/80 border border-slate-700 px-4 py-4 text-xl font-bold text-white transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
             />
           </div>
 
           <div className='mb-6'>
-            <label className='mb-2 block text-sm font-medium text-slate-700'>
-              家住地址（用于参考）
+            <label className='mb-2 block text-sm font-semibold text-slate-300 tracking-wider'>
+              家庭居住地址（用于智能研判距离，可不填）：
             </label>
             <input
               type='text'
               value={address}
               onChange={e => setAddress(e.target.value)}
-              placeholder='例如：雁塔区曲江大唐不夜城'
-              className='w-full rounded-lg border border-slate-200 px-4 py-3 transition focus:border-slate-400 focus:outline-none'
+              placeholder='例如：雁塔区小寨西路'
+              className='w-full rounded-xl bg-slate-900/80 border border-slate-700 px-4 py-4 text-white transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm'
             />
           </div>
 
@@ -321,46 +249,54 @@ ${school.catering_detail}
             <button
               onClick={handleSubmit}
               disabled={isCreatingOrder}
-              className='w-full rounded-lg bg-teal-500 py-4 text-lg font-medium text-white transition hover:bg-teal-600 disabled:opacity-60'
+              className='w-full rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 py-4 text-lg font-extrabold text-white transition hover:opacity-95 shadow-lg active:scale-[0.99] disabled:opacity-60'
             >
-              {isCreatingOrder ? '正在创建订单...' : `开始智能匹配学校（需支付 ${PAYMENT_CONFIG.price} 元）`}
+              {isCreatingOrder ? '正在连接收银台...' : `🚀 支付宝支付 ${PAYMENT_CONFIG.price} 元解锁 AI 推荐列表`}
             </button>
           ) : (
-            <div className='rounded-lg bg-green-50 py-4 text-center text-green-600'>
-              ✅ 已支付成功，正在显示匹配结果...
+            <div className='rounded-xl bg-green-500/20 border border-green-500/30 py-4 text-center text-green-400 font-bold flex items-center justify-center gap-2'>
+              <span>✓ 志愿解锁成功，推荐高中已呈现在下方</span>
             </div>
           )}
 
           {orderError && (
-            <p className='mt-3 text-center text-sm text-red-500'>{orderError}</p>
+            <p className='mt-4 text-center text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 py-2.5 rounded-lg'>{orderError}</p>
           )}
         </motion.div>
 
-        {/* 结果展示 */}
+        {/* 结果显示区 */}
         <AnimatePresence>
           {matchedSchools && (
             <motion.div
+              id='results-section'
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='mt-8'
+              className='mt-10 space-y-8'
             >
-              {/* 位次估算 */}
-              <div className='mb-6 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 p-4 text-center text-white'>
-                <p className='text-2xl font-bold'>
-                  您今年的全统位次大约在第 <span className='text-3xl'>{rankEstimate}</span> 名左右
-                </p>
+              {/* 位次估算 banner */}
+              <div className='rounded-2xl bg-gradient-to-r from-blue-600 to-teal-500 p-5 shadow-lg border border-blue-400/20 flex flex-col sm:flex-row items-center justify-between gap-4'>
+                <div>
+                  <h4 class="font-bold text-lg text-white">估算全统位次成功</h4>
+                  <p className='text-xs text-blue-100 mt-1'>
+                    计分科目调整后，您的预估位次在城六区排在：
+                  </p>
+                </div>
+                <div className='text-center sm:text-right'>
+                  <span className='text-3xl font-black text-white tracking-tight sm:text-4xl'>第 {rankEstimate} 名</span>
+                  <span className='text-xs block text-teal-100 font-medium'>左右</span>
+                </div>
               </div>
 
               {/* 冲 */}
-              {matchedSchools.chong.length > 0 && (
-                <div className='mb-6'>
-                  <div className='mb-3 flex items-center gap-2 border-l-4 border-orange-400 pl-3'>
-                    <h2 className='text-lg font-bold text-orange-600'>🏃 冲一冲</h2>
-                    <span className='text-sm text-slate-500'>录退风险适中，可尝试冲刺</span>
+              {matchedSchools["冲"].length > 0 && (
+                <div>
+                  <div className='mb-4 flex items-center gap-2 border-l-4 border-red-500 pl-3'>
+                    <h2 className='text-lg font-extrabold text-red-400'>🔥 冲一冲学校</h2>
+                    <span className='text-xs text-slate-400'>(往年录取线稍高于您当前预估，拼一把有概率)</span>
                   </div>
                   <div className='space-y-3'>
-                    {matchedSchools.chong.map(school => (
+                    {matchedSchools["冲"].map(school => (
                       <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
                     ))}
                   </div>
@@ -368,14 +304,14 @@ ${school.catering_detail}
               )}
 
               {/* 稳 */}
-              {matchedSchools.wen.length > 0 && (
-                <div className='mb-6'>
-                  <div className='mb-3 flex items-center gap-2 border-l-4 border-green-500 pl-3'>
-                    <h2 className='text-lg font-bold text-green-600'>✅ 稳一稳</h2>
-                    <span className='text-sm text-slate-500'>录取概率较高，建议优先考虑</span>
+              {matchedSchools["稳"].length > 0 && (
+                <div>
+                  <div className='mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3'>
+                    <h2 className='text-lg font-extrabold text-blue-400'>✅ 稳一稳学校</h2>
+                    <span className='text-xs text-slate-400'>(位次高度吻合，录取概率极大，建议作为首选)</span>
                   </div>
                   <div className='space-y-3'>
-                    {matchedSchools.wen.map(school => (
+                    {matchedSchools["稳"].map(school => (
                       <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
                     ))}
                   </div>
@@ -383,14 +319,14 @@ ${school.catering_detail}
               )}
 
               {/* 保 */}
-              {matchedSchools.bao.length > 0 && (
-                <div className='mb-6'>
-                  <div className='mb-3 flex items-center gap-2 border-l-4 border-blue-500 pl-3'>
-                    <h2 className='text-lg font-bold text-blue-600'>🛡 保一保</h2>
-                    <span className='text-sm text-slate-500'>稳妥选择，建议作为保底</span>
+              {matchedSchools["保"].length > 0 && (
+                <div>
+                  <div className='mb-4 flex items-center gap-2 border-l-4 border-green-500 pl-3'>
+                    <h2 className='text-lg font-extrabold text-green-400'>🛡️ 保一保学校</h2>
+                    <span className='text-xs text-slate-400'>(分数线安全垫充足，可作为绝佳的保底选项)</span>
                   </div>
                   <div className='space-y-3'>
-                    {matchedSchools.bao.map(school => (
+                    {matchedSchools["保"].map(school => (
                       <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
                     ))}
                   </div>
@@ -400,90 +336,88 @@ ${school.catering_detail}
           )}
         </AnimatePresence>
 
-        {/* 底部提示 */}
-        <p className='mt-8 text-center text-xs text-slate-400'>
-          本系统仅供参考，实际录取情况请以官方发布为准
+        <p className='mt-10 text-center text-xs text-slate-500 leading-relaxed max-w-sm mx-auto'>
+          免责声明：本AI分析系统仅作为数据辅助参考，中考投档录取充满变数，最终填报志愿请务必多方求证。
         </p>
       </div>
 
-      {/* 支付二维码弹窗 */}
+      {/* 支付二维码收银台弹窗 */}
       <AnimatePresence>
         {showQR && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
-          >
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm'>
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className='w-full max-w-sm rounded-2xl bg-white p-6 text-center'
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className='w-full max-w-sm rounded-3xl bg-slate-800 border border-slate-700 p-6 text-center shadow-2xl text-white'
             >
-              <h3 className='mb-2 text-lg font-bold text-slate-800'>📱 支付宝扫码支付</h3>
-              <p className='mb-4 text-sm text-slate-500'>支付 {PAYMENT_CONFIG.price} 元后自动显示结果</p>
+              <h3 className='text-lg font-extrabold tracking-wide text-slate-100 flex items-center justify-center gap-2'>
+                <span class="text-blue-400 font-black">支付宝</span>安全收银台
+              </h3>
+              <p className='text-xs text-slate-400 mt-1'>扫码即刻解封城六区学校推荐库</p>
 
-              {/* 二维码 */}
-              <div className='mx-auto mb-4 flex items-center justify-center rounded-xl bg-white p-4'>
-                {qrCode ? (
+              <div className='my-4 text-red-400 font-black text-3xl'>
+                ￥ {PAYMENT_CONFIG.price.toFixed(2)}
+              </div>
+
+              {/* 二维码生成 */}
+              <div className='mx-auto mb-4 flex items-center justify-center rounded-2xl bg-white p-4 h-52 w-52 shadow-inner border border-slate-700'>
+                {qrCodeUrl ? (
                   <img
-                    src={qrCode.startsWith('http') ? qrCode : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`}
-                    alt='支付二维码'
-                    className='h-52 w-52'
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`}
+                    alt='支付宝二维码'
+                    className='h-48 w-48'
                   />
                 ) : (
-                  <div className='h-52 w-52 animate-pulse rounded-xl bg-slate-100' />
+                  <div className='h-44 w-44 animate-pulse rounded-lg bg-slate-100' />
                 )}
               </div>
 
-              <p className='text-xs text-slate-400'>
-                支付成功后页面将自动跳转<br />请勿关闭此页面
+              <p className='text-xs text-slate-400 leading-relaxed'>
+                {paymentStatusText}<br />
+                <span class="text-teal-400 mt-1 block">✓ 支付成功后弹窗将自动安全关闭</span>
               </p>
 
               <button
                 onClick={() => {
                   setShowQR(false)
-                  setOrderError('您取消了支付，如需继续请重新发起')
+                  setOrderError('您已取消本次支付。如需精准分析，请重新匹配。')
                   setIsCreatingOrder(false)
                 }}
-                className='mt-4 w-full rounded-lg border border-slate-200 py-2 text-sm text-slate-500 transition hover:bg-slate-50'
+                className='mt-5 w-full rounded-xl border border-slate-700 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-slate-700/50'
               >
-                取消支付
+                取消付款
               </button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* AI报告弹窗 */}
+      {/* AI评测报告全屏弹窗 */}
       <AnimatePresence>
         {showReport && selectedSchool && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'
-          >
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'>
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className='max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6'
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className='max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-slate-800 border border-slate-700 p-6 shadow-2xl text-white'
             >
-              <h3 className='mb-4 text-xl font-bold text-slate-800'>
-                📊 {selectedSchool.name} - AI 深度报告
+              <h3 className='mb-4 text-lg font-extrabold text-blue-400 border-b border-slate-700 pb-3 flex items-center gap-2'>
+                📊 {selectedSchool.name} - 智能报告诊断
               </h3>
 
               {isGenerating ? (
-                <div className='flex items-center justify-center py-12'>
-                  <div className='h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800' />
-                  <span className='ml-3 text-slate-500'>AI 正在生成报告...</span>
+                <div className='flex flex-col items-center justify-center py-20 gap-4'>
+                  <div className='h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-blue-500' />
+                  <span className='text-sm text-slate-400 animate-pulse'>正在为您组装海量家长口碑与师资数据...</span>
                 </div>
               ) : (
-                <pre className='whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-700'>
-                  {aiReport}
-                </pre>
+                <div className='space-y-4'>
+                  <pre className='whitespace-pre-wrap rounded-xl bg-slate-900 p-5 text-sm leading-relaxed text-slate-300 border border-slate-800 font-sans max-h-[50vh] overflow-y-auto'>
+                    {aiReport}
+                  </pre>
+                </div>
               )}
 
               <button
@@ -491,37 +425,40 @@ ${school.catering_detail}
                   setShowReport(false)
                   setSelectedSchool(null)
                 }}
-                className='mt-4 w-full rounded-lg border border-slate-200 py-3 text-slate-600 transition hover:bg-slate-50'
+                className='mt-5 w-full rounded-xl bg-slate-700 py-3 text-sm font-bold text-white transition hover:bg-slate-600'
               >
-                关闭报告
+                关闭评测报告
               </button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
   )
 }
 
-// 学校卡片组件
+// 提取的卡片组件
 function SchoolCard({ school, onViewReport }: { school: School; onViewReport: (s: School) => void }) {
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      className='flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition'
+      className='flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-800 border border-slate-700 p-5 shadow-md transition gap-4'
     >
       <div>
-        <h3 className='font-bold text-slate-800'>{school.name}</h3>
-        <p className='text-sm text-slate-500'>{school.district}</p>
-        <p className='mt-1 text-xs text-slate-400'>
-          往年录取基准位次：约第 {school.avg_pickup_rank} 名
+        <h3 className='font-extrabold text-lg text-slate-100'>{school.name}</h3>
+        <p className='text-xs text-blue-400 mt-1 font-semibold'>{school.district}</p>
+        <p className='mt-2 text-xs text-slate-400'>
+          近5年平均录取最低位次：约第 <strong class="text-slate-200">前 {school.avg_pickup_rank} 名</strong> 左右
         </p>
       </div>
       <button
         onClick={() => onViewReport(school)}
-        className='rounded-lg bg-teal-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-600'
+        className='rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:opacity-95 text-white px-5 py-3 text-xs font-bold tracking-wider uppercase shadow-md flex items-center justify-center gap-1.5'
       >
-        深度AI评测
+        <span>深度 AI 评测</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
       </button>
     </motion.div>
   )
