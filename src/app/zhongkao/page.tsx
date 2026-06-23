@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react'
 // ============ 配置区 ============
 const PAYMENT_CONFIG = {
   price: 2, // 查阅费用（元）
-  // 刚才配置并打通的真实后台公网 HTTPS 地址
+  // 真实后台公网 HTTPS 地址
   backendUrl: 'https://pay.80oldcar.com'
 }
 // ================================
@@ -41,9 +41,9 @@ export default function ZhongkaoPage() {
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
 
-  // 二维码收银台弹窗状态
+  // 支付宝收银台跳转状态（原为二维码状态，现改为链接状态）
   const [showQR, setShowQR] = useState(false)
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  const [payUrl, setPayUrl] = useState<string>('')
   const [currentOrderId, setCurrentOrderId] = useState<string>('')
   const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [orderError, setOrderError] = useState<string>('')
@@ -61,8 +61,8 @@ export default function ZhongkaoPage() {
 
     setIsCreatingOrder(true)
     setOrderError('')
-    setQrCodeUrl('')
-    setPaymentStatusText('正在向支付宝申请付款二维码...')
+    setPayUrl('')
+    setPaymentStatusText('正在向支付宝申请付款订单...')
 
     try {
       // 1. 向 Hono 后端发起预下单
@@ -73,18 +73,25 @@ export default function ZhongkaoPage() {
       })
       const data = await resp.json()
 
-      if (data.status !== 'success') {
-        setOrderError(data.message || '生成订单失败，请联系管理员。')
+      if (data.status !== 'success' && data.success !== true) {
+        setOrderError(data.message || data.error || '生成订单失败，请联系管理员。')
         setIsCreatingOrder(false)
         return
       }
 
       setCurrentOrderId(data.orderId)
-      // 拿到支付宝返回的原生预下单码，显示弹窗
-      setQrCodeUrl(data.qrCodeUrl)
+      // 拿到后端返回的支付跳转链接
+      setPayUrl(data.payUrl)
       setShowQR(true)
       setIsCreatingOrder(false)
-      setPaymentStatusText('请使用手机支付宝扫码付款')
+      
+      // 尝试自动弹出新窗口
+      const paymentWindow = window.open(data.payUrl, '_blank')
+      if (!paymentWindow) {
+        setPaymentStatusText('浏览器拦截了弹出窗口，请点击下方按钮前往支付')
+      } else {
+        setPaymentStatusText('已在新标签页拉起收银台，请支付完成后返回本页')
+      }
 
       // 2. 启动高吞吐的双路监听（SSE 实时推送 + 轮询兜底）
       listenAndCheckOrder(data.orderId, s)
@@ -100,10 +107,21 @@ export default function ZhongkaoPage() {
     const eventSource = new EventSource(`${backend}/api/listen-order?orderId=${orderId}`)
 
     eventSource.onmessage = (event) => {
-      if (event.data === 'paid') {
-        eventSource.close()
-        sseActive = false
-        handlePaymentSuccess(orderId, scoreValue)
+      // 注意：根据您原本后端的逻辑，SSE 返回的数据格式为 JSON 字符串
+      try {
+        const payload = JSON.parse(event.data)
+        if (payload.type === 'paid') {
+          eventSource.close()
+          sseActive = false
+          handlePaymentSuccess(orderId, scoreValue)
+        }
+      } catch (err) {
+        // 兼容简单字符串
+        if (event.data === 'paid') {
+          eventSource.close()
+          sseActive = false
+          handlePaymentSuccess(orderId, scoreValue)
+        }
       }
     }
 
@@ -119,7 +137,7 @@ export default function ZhongkaoPage() {
   // HTTP 快速轮询兜底函数
   async function pollOrderStatus(orderId: string, scoreValue: number, attempts = 0) {
     if (attempts > 40) { // 2分钟内未付款则自动超时
-      setOrderError('支付检测已超时，请重新点击“开始智能匹配”生成新二维码')
+      setOrderError('支付检测已超时，请重新点击“开始智能匹配”')
       setShowQR(false)
       return
     }
@@ -341,7 +359,7 @@ export default function ZhongkaoPage() {
         </p>
       </div>
 
-      {/* 支付二维码收银台弹窗 */}
+      {/* 支付安全收银台弹窗 (无缝替换原来的二维码框) */}
       <AnimatePresence>
         {showQR && (
           <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm'>
@@ -354,29 +372,34 @@ export default function ZhongkaoPage() {
               <h3 className='text-lg font-extrabold tracking-wide text-slate-100 flex items-center justify-center gap-2'>
                 <span className="text-blue-400 font-black">支付宝</span>安全收银台
               </h3>
-              <p className='text-xs text-slate-400 mt-1'>扫码即刻解封城六区学校推荐库</p>
+              <p className='text-xs text-slate-400 mt-1'>跳转安全网关解封推荐库</p>
 
               <div className='my-4 text-red-400 font-black text-3xl'>
                 ￥ {PAYMENT_CONFIG.price.toFixed(2)}
               </div>
 
-              {/* 二维码生成 */}
-              <div className='mx-auto mb-4 flex items-center justify-center rounded-2xl bg-white p-4 h-52 w-52 shadow-inner border border-slate-700'>
-                {qrCodeUrl ? (
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`}
-                    alt='支付宝二维码'
-                    className='h-48 w-48'
-                  />
-                ) : (
-                  <div className='h-44 w-44 animate-pulse rounded-lg bg-slate-100' />
-                )}
+              {/* 将原先的图片二维码替换为一个状态提示框和手动跳转按钮 */}
+              <div className='mx-auto mb-4 flex flex-col items-center justify-center rounded-2xl bg-slate-900/60 p-4 min-h-[140px] shadow-inner border border-slate-700/50'>
+                <div className='flex items-center justify-center gap-2 mb-3'>
+                  <span className='w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping'></span>
+                  <span className='w-3 h-3 rounded-full bg-teal-400 animate-pulse'></span>
+                  <span className='w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping'></span>
+                </div>
+                <p className='text-xs text-slate-300 leading-relaxed px-2'>
+                  {paymentStatusText}
+                </p>
               </div>
 
-              <p className='text-xs text-slate-400 leading-relaxed'>
-                {paymentStatusText}<br />
-                <span className="text-teal-400 mt-1 block">✓ 支付成功后弹窗将自动安全关闭</span>
-              </p>
+              {payUrl && (
+                <a
+                  href={payUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='block w-full rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 hover:brightness-110 text-white py-3.5 text-sm font-bold shadow-lg transition active:scale-[0.98]'
+                >
+                  前往支付宝安全付款
+                </a>
+              )}
 
               <button
                 onClick={() => {
