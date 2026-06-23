@@ -1,0 +1,40 @@
+diff --git a/src/app/zhongkao/page.tsx b/src/app/zhongkao/page.tsx
+index f86a001..b6ad756 100644
+--- a/src/app/zhongkao/page.tsx
++++ b/src/app/zhongkao/page.tsx
+@@ -277,7 +277,7 @@ export default function ZhongkaoPage() {
+               {/* 位次估算 banner */}
+               <div className='rounded-2xl bg-gradient-to-r from-blue-600 to-teal-500 p-5 shadow-lg border border-blue-400/20 flex flex-col sm:flex-row items-center justify-between gap-4'>
+                 <div>
+-                  <h4 class="font-bold text-lg text-white">估算全统位次成功</h4>
++                  <h4 className="font-bold text-lg text-white">估算全统位次成功</h4>
+                   <p className='text-xs text-blue-100 mt-1'>
+                     计分科目调整后，您的预估位次在城六区排在：
+                   </p>
+@@ -352,7 +352,7 @@ export default function ZhongkaoPage() {
+               className='w-full max-w-sm rounded-3xl bg-slate-800 border border-slate-700 p-6 text-center shadow-2xl text-white'
+             >
+               <h3 className='text-lg font-extrabold tracking-wide text-slate-100 flex items-center justify-center gap-2'>
+-                <span class="text-blue-400 font-black">支付宝</span>安全收银台
++                <span className="text-blue-400 font-black">支付宝</span>安全收银台
+               </h3>
+               <p className='text-xs text-slate-400 mt-1'>扫码即刻解封城六区学校推荐库</p>
+ 
+@@ -375,7 +375,7 @@ export default function ZhongkaoPage() {
+ 
+               <p className='text-xs text-slate-400 leading-relaxed'>
+                 {paymentStatusText}<br />
+-                <span class="text-teal-400 mt-1 block">✓ 支付成功后弹窗将自动安全关闭</span>
++                <span className="text-teal-400 mt-1 block">✓ 支付成功后弹窗将自动安全关闭</span>
+               </p>
+ 
+               <button
+@@ -448,7 +448,7 @@ function SchoolCard({ school, onViewReport }: { school: School; onViewReport: (s
+         <h3 className='font-extrabold text-lg text-slate-100'>{school.name}</h3>
+         <p className='text-xs text-blue-400 mt-1 font-semibold'>{school.district}</p>
+         <p className='mt-2 text-xs text-slate-400'>
+-          近5年平均录取最低位次：约第 <strong class="text-slate-200">前 {school.avg_pickup_rank} 名</strong> 左右
++          近5年平均录取最低位次：约第 <strong className="text-slate-200">前 {school.avg_pickup_rank} 名</strong> 左右
+         </p>
+       </div>
+       <button

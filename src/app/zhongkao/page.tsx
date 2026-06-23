@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'motion/react'
 // ============ 配置区 ============
 const PAYMENT_CONFIG = {
   price: 2, // 查阅费用（元）
-  // 真实后台公网 HTTPS 地址
   backendUrl: 'https://pay.80oldcar.com'
 }
 // ================================
@@ -41,7 +40,7 @@ export default function ZhongkaoPage() {
   const [aiReport, setAiReport] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
 
-  // 支付宝收银台跳转状态（原为二维码状态，现改为链接状态）
+  // 支付宝收银台弹窗状态
   const [showQR, setShowQR] = useState(false)
   const [payUrl, setPayUrl] = useState<string>('')
   const [currentOrderId, setCurrentOrderId] = useState<string>('')
@@ -51,7 +50,21 @@ export default function ZhongkaoPage() {
 
   const backend = PAYMENT_CONFIG.backendUrl
 
-  // 1. 点击“开始智能匹配” -> 核心流：先收钱，后下发学校数据
+  // 页面加载时自动检查支付回调并提取数据（适配 return_url 带着参数跳回来的情况）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('result')
+    const scoreParam = params.get('score')
+    const orderIdParam = params.get('order_id')
+
+    if (result === 'paid' && scoreParam && orderIdParam) {
+      handlePaymentSuccess(orderIdParam, parseInt(scoreParam))
+      // 优雅擦除 URL 中的回调参数，恢复干净的链接
+      window.history.replaceState({}, '', '/zhongkao')
+    }
+  }, [])
+
+  // 点击“开始智能匹配” -> 向 Hono 申请电脑网站支付官方链接并弹出
   const handleSubmit = async () => {
     const s = parseInt(score)
     if (!s || s < 400 || s > 700) {
@@ -65,35 +78,37 @@ export default function ZhongkaoPage() {
     setPaymentStatusText('正在向支付宝申请付款订单...')
 
     try {
-      // 1. 向 Hono 后端发起预下单
+      // 1. 发起下单请求
       const resp = await fetch(`${backend}/api/create-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ score: s, address })
       })
       const data = await resp.json()
 
-      if (data.status !== 'success' && data.success !== true) {
-        setOrderError(data.message || data.error || '生成订单失败，请联系管理员。')
+      if (data.status !== 'success') {
+        setOrderError(data.message || '生成订单失败，请联系管理员。')
         setIsCreatingOrder(false)
         return
       }
 
       setCurrentOrderId(data.orderId)
-      // 拿到后端返回的支付跳转链接
       setPayUrl(data.payUrl)
       setShowQR(true)
       setIsCreatingOrder(false)
-      
-      // 尝试自动弹出新窗口
+      setPaymentStatusText('已为您安全拉起官方支付网关')
+
+      // 防弹出阻断：自动尝试在新窗口中直接打开官方付款页面
       const paymentWindow = window.open(data.payUrl, '_blank')
       if (!paymentWindow) {
-        setPaymentStatusText('浏览器拦截了弹出窗口，请点击下方按钮前往支付')
+        setPaymentStatusText('由于您的浏览器阻止了弹出窗口，请点击下方蓝色按钮手动前往支付')
       } else {
-        setPaymentStatusText('已在新标签页拉起收银台，请支付完成后返回本页')
+        setPaymentStatusText('已在新页面为您拉起官方收银台，请在支付完成后返回本页')
       }
 
-      // 2. 启动高吞吐的双路监听（SSE 实时推送 + 轮询兜底）
+      // 2. 启动订单监听（双路保驾：SSE + HTTP 轮询）
       listenAndCheckOrder(data.orderId, s)
     } catch (e: any) {
       setOrderError('连接支付网关失败，请重试: ' + e.message)
@@ -101,42 +116,31 @@ export default function ZhongkaoPage() {
     }
   }
 
-  // 2. SSE长连接监听付款状态（双保险模式：SSE连通则监听，失败则秒级自动切换为HTTP短轮询）
+  // 长连接监听
   function listenAndCheckOrder(orderId: string, scoreValue: number) {
-    let sseActive = true;
+    let sseActive = true
     const eventSource = new EventSource(`${backend}/api/listen-order?orderId=${orderId}`)
 
     eventSource.onmessage = (event) => {
-      // 注意：根据您原本后端的逻辑，SSE 返回的数据格式为 JSON 字符串
-      try {
-        const payload = JSON.parse(event.data)
-        if (payload.type === 'paid') {
-          eventSource.close()
-          sseActive = false
-          handlePaymentSuccess(orderId, scoreValue)
-        }
-      } catch (err) {
-        // 兼容简单字符串
-        if (event.data === 'paid') {
-          eventSource.close()
-          sseActive = false
-          handlePaymentSuccess(orderId, scoreValue)
-        }
+      const data = JSON.parse(event.data)
+      if (data.type === 'paid') {
+        eventSource.close()
+        sseActive = false
+        handlePaymentSuccess(orderId, scoreValue)
       }
     }
 
     eventSource.onerror = () => {
       eventSource.close()
-      // 如果 SSE 因为浏览器安全策略断开，立刻无缝切换为 HTTP 快速轮询
       if (sseActive) {
         pollOrderStatus(orderId, scoreValue)
       }
     }
   }
 
-  // HTTP 快速轮询兜底函数
+  // 轮询核对状态
   async function pollOrderStatus(orderId: string, scoreValue: number, attempts = 0) {
-    if (attempts > 40) { // 2分钟内未付款则自动超时
+    if (attempts > 60) {
       setOrderError('支付检测已超时，请重新点击“开始智能匹配”')
       setShowQR(false)
       return
@@ -150,21 +154,21 @@ export default function ZhongkaoPage() {
       }
     } catch (e) {}
 
-    // 每 3 秒核对一次
     await new Promise(resolve => setTimeout(resolve, 3000))
     pollOrderStatus(orderId, scoreValue, attempts + 1)
   }
 
-  // 3. 付款成功后：向后端请求只有付款订单才能解封的“冲、稳、保”学校名单
+  // 支付解锁成功
   async function handlePaymentSuccess(orderId: string, scoreValue: number) {
     setShowQR(false)
     setIsPaid(true)
-    setPaymentStatusText('支付成功！AI 正在精准筛选位次学校...')
 
     try {
       const resp = await fetch(`${backend}/api/predict`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ score: scoreValue, orderId: orderId })
       })
       const data = await resp.json()
@@ -172,7 +176,6 @@ export default function ZhongkaoPage() {
       if (data.status === 'success') {
         setRankEstimate(data.rank_estimate)
         setMatchedSchools(data.schools)
-        // 丝滑滚动到结果展示区
         setTimeout(() => {
           document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' })
         }, 300)
@@ -180,17 +183,15 @@ export default function ZhongkaoPage() {
         alert(data.message)
       }
     } catch (err: any) {
-      alert("拉取学校列表失败，请刷新页面重试：" + err.message)
+      alert("拉取推荐学校失败，请重新尝试：" + err.message)
     }
   }
 
-  // 查看学校深度AI报告
   const handleViewReport = (school: School) => {
     setSelectedSchool(school)
     setIsGenerating(true)
     setShowReport(true)
 
-    // 智能渲染个性化图文评估报告
     setTimeout(() => {
       const report = `🏫 【${school.name}】综合分析报告\n` +
         `----------------------------------------\n` +
@@ -212,12 +213,8 @@ export default function ZhongkaoPage() {
     <div className='min-h-screen bg-gradient-to-b from-blue-900 via-slate-900 to-black px-4 pt-28 pb-16 text-white'>
       <div className='mx-auto max-w-3xl'>
 
-        {/* 头部精美标语 */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className='mb-10 text-center'
-        >
+        {/* 头部标题与标语 */}
+        <div className='mb-10 text-center transition-all duration-500'>
           <span className='rounded-full bg-blue-500/20 px-4 py-1.5 text-xs font-bold tracking-widest text-blue-400 uppercase border border-blue-500/30'>
             西安城六区专属版
           </span>
@@ -227,14 +224,10 @@ export default function ZhongkaoPage() {
           <p className='mt-3 text-slate-400 text-sm max-w-md mx-auto leading-relaxed'>
             结合近五年录取线、一分一段表及三年定向名额，算法智能呈现“冲、稳、保”梯度学校及深度生活软性标签。
           </p>
-        </motion.div>
+        </div>
 
-        {/* 输入面板 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className='rounded-3xl bg-slate-800/80 p-6 md:p-8 shadow-2xl border border-slate-700/50 backdrop-blur-md'
-        >
+        {/* 输入卡片面板 */}
+        <div className='rounded-3xl bg-slate-800/80 p-6 md:p-8 shadow-2xl border border-slate-700/50 backdrop-blur-md transition-all duration-500'>
           <div className='mb-5'>
             <label className='mb-2 block text-sm font-semibold text-slate-300 tracking-wider'>
               输入您或孩子的预估分数：
@@ -280,116 +273,108 @@ export default function ZhongkaoPage() {
           {orderError && (
             <p className='mt-4 text-center text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 py-2.5 rounded-lg'>{orderError}</p>
           )}
-        </motion.div>
+        </div>
 
-        {/* 结果显示区 */}
-        <AnimatePresence>
-          {matchedSchools && (
-            <motion.div
-              id='results-section'
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='mt-10 space-y-8'
-            >
-              {/* 位次估算 banner */}
-              <div className='rounded-2xl bg-gradient-to-r from-blue-600 to-teal-500 p-5 shadow-lg border border-blue-400/20 flex flex-col sm:flex-row items-center justify-between gap-4'>
-                <div>
-                  <h4 className="font-bold text-lg text-white">估算全统位次成功</h4>
-                  <p className='text-xs text-blue-100 mt-1'>
-                    计分科目调整后，您的预估位次在城六区排在：
-                  </p>
+        {/* 精准匹配结果展示区 */}
+        {matchedSchools && (
+          <div id='results-section' className='mt-10 space-y-8 transition-opacity duration-700 ease-in-out'>
+            <div className='rounded-2xl bg-gradient-to-r from-blue-600 to-teal-500 p-5 shadow-lg border border-blue-400/20 flex flex-col sm:flex-row items-center justify-between gap-4'>
+              <div>
+                <h4 className="font-bold text-lg text-white">估算全统位次成功</h4>
+                <p className='text-xs text-blue-100 mt-1'>
+                  计分科目调整后，您的预估位次在城六区排在：
+                </p>
+              </div>
+              <div className='text-center sm:text-right'>
+                <span className='text-3xl font-black text-white tracking-tight sm:text-4xl'>第 {rankEstimate} 名</span>
+                <span className='text-xs block text-teal-100 font-medium'>左右</span>
+              </div>
+            </div>
+
+            {/* 冲 */}
+            {matchedSchools["冲"].length > 0 && (
+              <div>
+                <div className='mb-4 flex items-center gap-2 border-l-4 border-red-500 pl-3'>
+                  <h2 className='text-lg font-extrabold text-red-400'>🔥 冲一冲学校</h2>
+                  <span className='text-xs text-slate-400'>(往年录取线稍高于您当前预估，拼一把有概率)</span>
                 </div>
-                <div className='text-center sm:text-right'>
-                  <span className='text-3xl font-black text-white tracking-tight sm:text-4xl'>第 {rankEstimate} 名</span>
-                  <span className='text-xs block text-teal-100 font-medium'>左右</span>
+                <div className='space-y-3'>
+                  {matchedSchools["冲"].map(school => (
+                    <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* 冲 */}
-              {matchedSchools["冲"].length > 0 && (
-                <div>
-                  <div className='mb-4 flex items-center gap-2 border-l-4 border-red-500 pl-3'>
-                    <h2 className='text-lg font-extrabold text-red-400'>🔥 冲一冲学校</h2>
-                    <span className='text-xs text-slate-400'>(往年录取线稍高于您当前预估，拼一把有概率)</span>
-                  </div>
-                  <div className='space-y-3'>
-                    {matchedSchools["冲"].map(school => (
-                      <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
-                    ))}
-                  </div>
+            {/* 稳 */}
+            {matchedSchools["稳"].length > 0 && (
+              <div>
+                <div className='mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3'>
+                  <h2 className='text-lg font-extrabold text-blue-400'>✅ 稳一稳学校</h2>
+                  <span className='text-xs text-slate-400'>(位次高度吻合，录取概率极大，建议作为首选)</span>
                 </div>
-              )}
+                <div className='space-y-3'>
+                  {matchedSchools["稳"].map(school => (
+                    <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-              {/* 稳 */}
-              {matchedSchools["稳"].length > 0 && (
-                <div>
-                  <div className='mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3'>
-                    <h2 className='text-lg font-extrabold text-blue-400'>✅ 稳一稳学校</h2>
-                    <span className='text-xs text-slate-400'>(位次高度吻合，录取概率极大，建议作为首选)</span>
-                  </div>
-                  <div className='space-y-3'>
-                    {matchedSchools["稳"].map(school => (
-                      <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
-                    ))}
-                  </div>
+            {/* 保 */}
+            {matchedSchools["保"].length > 0 && (
+              <div>
+                <div className='mb-4 flex items-center gap-2 border-l-4 border-green-500 pl-3'>
+                  <h2 className='text-lg font-extrabold text-green-400'>🛡️ 保一保学校</h2>
+                  <span className='text-xs text-slate-400'>(分数线安全垫充足，可作为绝佳的保底选项)</span>
                 </div>
-              )}
-
-              {/* 保 */}
-              {matchedSchools["保"].length > 0 && (
-                <div>
-                  <div className='mb-4 flex items-center gap-2 border-l-4 border-green-500 pl-3'>
-                    <h2 className='text-lg font-extrabold text-green-400'>🛡️ 保一保学校</h2>
-                    <span className='text-xs text-slate-400'>(分数线安全垫充足，可作为绝佳的保底选项)</span>
-                  </div>
-                  <div className='space-y-3'>
-                    {matchedSchools["保"].map(school => (
-                      <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
-                    ))}
-                  </div>
+                <div className='space-y-3'>
+                  {matchedSchools["保"].map(school => (
+                    <SchoolCard key={school.id} school={school} onViewReport={handleViewReport} />
+                  ))}
                 </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            )}
+          </div>
+        )}
 
         <p className='mt-10 text-center text-xs text-slate-500 leading-relaxed max-w-sm mx-auto'>
           免责声明：本AI分析系统仅作为数据辅助参考，中考投档录取充满变数，最终填报志愿请务必多方求证。
         </p>
       </div>
 
-      {/* 支付安全收银台弹窗 (无缝替换原来的二维码框) */}
+      {/* 支付宝安全收银台跳转弹窗 (保留您精美大气的暗色毛玻璃卡片风格，剔除报错的自定义二维码) */}
       <AnimatePresence>
         {showQR && (
           <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm'>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               className='w-full max-w-sm rounded-3xl bg-slate-800 border border-slate-700 p-6 text-center shadow-2xl text-white'
             >
               <h3 className='text-lg font-extrabold tracking-wide text-slate-100 flex items-center justify-center gap-2'>
                 <span className="text-blue-400 font-black">支付宝</span>安全收银台
               </h3>
-              <p className='text-xs text-slate-400 mt-1'>跳转安全网关解封推荐库</p>
+              <p className='text-xs text-slate-400 mt-1'>正在通过官方电脑网站支付通道安全结算</p>
 
-              <div className='my-4 text-red-400 font-black text-3xl'>
+              <div className='my-5 text-teal-400 font-black text-3xl'>
                 ￥ {PAYMENT_CONFIG.price.toFixed(2)}
               </div>
 
-              {/* 将原先的图片二维码替换为一个状态提示框和手动跳转按钮 */}
-              <div className='mx-auto mb-4 flex flex-col items-center justify-center rounded-2xl bg-slate-900/60 p-4 min-h-[140px] shadow-inner border border-slate-700/50'>
-                <div className='flex items-center justify-center gap-2 mb-3'>
-                  <span className='w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping'></span>
-                  <span className='w-3 h-3 rounded-full bg-teal-400 animate-pulse'></span>
-                  <span className='w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping'></span>
+              {/* 替代二维码的高端加载/连接指示状态 */}
+              <div className='mx-auto mb-5 p-5 rounded-2xl bg-slate-900/60 border border-slate-700/50 flex flex-col items-center justify-center min-h-[140px]'>
+                <div className='flex items-center justify-center gap-1.5 mb-3'>
+                  <span className='w-2 h-2 rounded-full bg-blue-500 animate-ping'></span>
+                  <span className='w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse'></span>
+                  <span className='w-2 h-2 rounded-full bg-emerald-400 animate-ping'></span>
                 </div>
-                <p className='text-xs text-slate-300 leading-relaxed px-2'>
+                <p className='text-xs text-slate-300 px-2 leading-relaxed'>
                   {paymentStatusText}
                 </p>
               </div>
 
+              {/* 显式跳转按钮 (点击安全进入官方收银台，完美规避手机风控拦截) */}
               {payUrl && (
                 <a
                   href={payUrl}
@@ -397,9 +382,13 @@ export default function ZhongkaoPage() {
                   rel='noopener noreferrer'
                   className='block w-full rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 hover:brightness-110 text-white py-3.5 text-sm font-bold shadow-lg transition active:scale-[0.98]'
                 >
-                  前往支付宝安全付款
+                  立即前往支付宝付款
                 </a>
               )}
+
+              <p className='text-[10px] text-slate-500 mt-3 leading-relaxed'>
+                💡 提示：付款完成后，系统会在此处自动感应状态并完成解锁。请勿在解锁前关闭本页面。
+              </p>
 
               <button
                 onClick={() => {
@@ -407,7 +396,7 @@ export default function ZhongkaoPage() {
                   setOrderError('您已取消本次支付。如需精准分析，请重新匹配。')
                   setIsCreatingOrder(false)
                 }}
-                className='mt-5 w-full rounded-xl border border-slate-700 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-slate-700/50'
+                className='mt-4 w-full rounded-xl border border-slate-700 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-slate-700/50'
               >
                 取消付款
               </button>
@@ -421,9 +410,9 @@ export default function ZhongkaoPage() {
         {showReport && selectedSchool && (
           <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'>
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
               className='max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-slate-800 border border-slate-700 p-6 shadow-2xl text-white'
             >
               <h3 className='mb-4 text-lg font-extrabold text-blue-400 border-b border-slate-700 pb-3 flex items-center gap-2'>
@@ -480,7 +469,7 @@ function SchoolCard({ school, onViewReport }: { school: School; onViewReport: (s
       >
         <span>深度 AI 评测</span>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
         </svg>
       </button>
     </motion.div>
