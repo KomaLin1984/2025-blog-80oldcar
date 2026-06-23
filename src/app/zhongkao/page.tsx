@@ -69,12 +69,21 @@ export default function ZhongkaoPage() {
         return
       }
       
+      // 兼容不同版本后端返回的链接字段，防止获取不到导致跳转至空白页
+      const finalPayUrl = data.wapPayUrl || data.payUrl || data.url;
+
+      if (!finalPayUrl) {
+        setOrderError('未获取到有效的支付链接，请检查后端配置')
+        setIsCreatingOrder(false)
+        return
+      }
+
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
       if (isMobile) {
         setPaymentStatusText('正在为您拉起支付宝 App...')
-        window.location.href = data.wapPayUrl
+        window.location.href = finalPayUrl
       } else {
-        setQrCodeData(data.wapPayUrl)
+        setQrCodeData(finalPayUrl)
         setShowQR(true)
         setIsCreatingOrder(false)
         setPaymentStatusText('请使用手机支付宝【扫一扫】付款')
@@ -129,6 +138,8 @@ export default function ZhongkaoPage() {
               {isCreatingOrder ? '处理中...' : '🚀 支付宝支付 2 元解锁'}
             </button>
           ) : <div className='text-center text-green-400 font-bold'>✓ 志愿解锁成功</div>}
+          
+          {orderError && <p className='mt-4 text-center text-sm text-red-400'>{orderError}</p>}
         </div>
       </div>
 
@@ -137,7 +148,7 @@ export default function ZhongkaoPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4'>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className='bg-slate-800 p-8 rounded-3xl text-center border border-slate-700'>
               <h3 className='text-lg font-bold mb-4'>扫码安全付款</h3>
-              {qrCodeData && <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrCodeData)}`} className='mx-auto mb-4 bg-white p-2 rounded-xl' />}
+              {qrCodeData && <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrCodeData)}`} className='mx-auto mb-4 bg-white p-2 rounded-xl' alt='二维码加载中...' />}
               <p className='text-sm text-slate-400'>{paymentStatusText}</p>
               <button onClick={() => setShowQR(false)} className='mt-4 w-full py-2 bg-slate-700 rounded-lg'>取消</button>
             </motion.div>
