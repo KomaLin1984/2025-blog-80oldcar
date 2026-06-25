@@ -46,3 +46,17 @@ export function useLatestBlog() {
 		error
 	}
 }
+
+export function useLatestBlogs(limit = 5) {
+	const { items, loading, error } = useBlogIndex()
+
+	const latestBlogs = items
+		.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+		.slice(0, limit)
+
+	return {
+		blogs: latestBlogs,
+		loading,
+		error
+	}
+}

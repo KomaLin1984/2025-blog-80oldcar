@@ -1,6 +1,6 @@
 import Card from '@/components/card'
 import { useCenterStore } from '@/hooks/use-center'
-import { useLatestBlog } from '@/hooks/use-blog-index'
+import { useLatestBlogs } from '@/hooks/use-blog-index'
 import { useConfigStore } from './stores/config-store'
 import { CARD_SPACING } from '@/consts'
 import dayjs from 'dayjs'
@@ -10,7 +10,7 @@ import { HomeDraggableLayer } from './home-draggable-layer'
 export default function ArticleCard({ staticPosition }: { staticPosition?: boolean }) {
 	const center = useCenterStore()
 	const { cardStyles, siteContent } = useConfigStore()
-	const { blog, loading } = useLatestBlog()
+	const { blogs, loading } = useLatestBlogs(5)
 	const styles = cardStyles.articleCard
 	const hiCardStyles = cardStyles.hiCard
 	const socialButtonsStyles = cardStyles.socialButtons
@@ -38,19 +38,23 @@ export default function ArticleCard({ staticPosition }: { staticPosition?: boole
 					<div className='flex h-[60px] items-center justify-center'>
 						<span className='text-secondary text-xs'>加载中...</span>
 					</div>
-				) : blog ? (
-					<Link href={`/blog/${blog.slug}`} className='flex transition-opacity hover:opacity-80'>
-						{blog.cover ? (
-							<img src={blog.cover} alt='cover' className='mr-3 h-12 w-12 shrink-0 rounded-xl border object-cover' />
-						) : (
-							<div className='text-secondary mr-3 grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/60'>+</div>
-						)}
-						<div className='flex-1'>
-							<h3 className='line-clamp-1 text-sm font-medium'>{blog.title || blog.slug}</h3>
-							{blog.summary && <p className='text-secondary mt-1 line-clamp-3 text-xs'>{blog.summary}</p>}
-							<p className='text-secondary mt-3 text-xs'>{dayjs(blog.date).format('YYYY/M/D')}</p>
-						</div>
-					</Link>
+				) : blogs.length > 0 ? (
+					<div className='space-y-3'>
+						{blogs.map(blog => (
+							<Link key={blog.slug} href={`/blog/${blog.slug}`} className='flex transition-opacity hover:opacity-80'>
+								{blog.cover ? (
+									<img src={blog.cover} alt='cover' className='mr-3 h-12 w-12 shrink-0 rounded-xl border object-cover' />
+								) : (
+									<div className='text-secondary mr-3 grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/60'>+</div>
+								)}
+								<div className='flex-1'>
+									<h3 className='line-clamp-1 text-sm font-medium'>{blog.title || blog.slug}</h3>
+									{blog.summary && <p className='text-secondary mt-1 line-clamp-2 text-xs'>{blog.summary}</p>}
+									<p className='text-secondary mt-1 text-xs'>{dayjs(blog.date).format('YYYY/M/D')}</p>
+								</div>
+							</Link>
+						))}
+					</div>
 				) : (
 					<div className='flex h-[60px] items-center justify-center'>
 						<span className='text-secondary text-xs'>暂无文章</span>
