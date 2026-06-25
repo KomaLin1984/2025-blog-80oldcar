@@ -39,7 +39,7 @@ export default function ArticleCard({ staticPosition }: { staticPosition?: boole
 						<span className='text-secondary text-xs'>加载中...</span>
 					</div>
 				) : blogs.length > 0 ? (
-					<div className='space-y-3'>
+					<div className='max-h-[calc(100%-24px)] space-y-3 overflow-y-auto pr-1'>
 						{blogs.map(blog => (
 							<Link key={blog.slug} href={`/blog/${blog.slug}`} className='flex transition-opacity hover:opacity-80'>
 								{blog.cover ? (
