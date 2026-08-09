@@ -1,5 +1,15 @@
 [
   {
+    "slug": "amd-ppc-c-drive-fix",
+    "title": " C盘突然被占用几十上百G？揭秘 AMD 显卡 PPC 文件夹爆满 Bug 与彻底解决指南",
+    "tags": [],
+    "date": "2026-08-09T14:22",
+    "summary": "",
+    "cover": "/blogs/amd-ppc-c-drive-fix/183e1b3f16d2bbd2.png",
+    "hidden": false,
+    "category": ""
+  },
+  {
     "slug": "jellyfin-mediamtx-obs",
     "title": "Windows Docker 部署 Jellyfin + MediaMTX + OBS：局域网流媒体与直播系统",
     "tags": [],
